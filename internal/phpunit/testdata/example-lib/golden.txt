@@ -1,0 +1,4 @@
+.... 4 / 7 (57%) OK
+... 7 / 7 (100%) OK
+
+OK (7 tests, 19 assertions)

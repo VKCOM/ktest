@@ -1,0 +1,5 @@
+{
+    "require": {
+        "vkcom/kphpunit": "dev-master"
+    }
+}

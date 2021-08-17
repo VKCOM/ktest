@@ -1,0 +1,10 @@
+{
+    "require": {
+        "vkcom/kphpunit": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "Foo\\Bar\\": "src/"
+        }
+    }
+}

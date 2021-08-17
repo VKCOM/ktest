@@ -1,0 +1,27 @@
+FFF 3 / 4 (75%) FAIL
+F 4 / 4 (100%) FAIL
+
+There were 4 failures:
+
+1) BazTest::testEquals1
+Failed asserting that "foo" matches expected 3.
+
+BazTest.php:9
+
+2) BazTest::testTrue
+Failed asserting that 11 is true.
+
+BazTest.php:14
+
+3) BazTest::testFalse
+Failed asserting that ["a","b"] is false.
+
+BazTest.php:18
+
+4) IntegersTest::testGetFirst
+Failed asserting that null is identical to 0.
+
+IntegersTest.php:8
+
+FAILURES!
+Tests: 4, Assertions: 4, Failures: 4.

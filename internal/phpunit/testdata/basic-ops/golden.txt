@@ -1,0 +1,81 @@
+.FFF.FFF.FFF..FF..FF..FF 24 / 24 (100%) FAIL
+
+There were 15 failures:
+
+1) BasicOpsTest::testAssertTrueFail1
+Failed asserting that false is true.
+
+BasicOpsTest.php:7
+
+2) BasicOpsTest::testAssertTrueFail2
+Failed asserting that 0 is true.
+
+BasicOpsTest.php:8
+
+3) BasicOpsTest::testAssertTrueFail3
+Failed asserting that 1 is true.
+
+BasicOpsTest.php:9
+
+4) BasicOpsTest::testAssertFalseFail1
+Failed asserting that true is false.
+
+BasicOpsTest.php:12
+
+5) BasicOpsTest::testAssertFalseFail2
+Failed asserting that 0 is false.
+
+BasicOpsTest.php:13
+
+6) BasicOpsTest::testAssertFalseFail3
+Failed asserting that 1 is false.
+
+BasicOpsTest.php:14
+
+7) BasicOpsTest::testAssertSameFail1
+Failed asserting that false is identical to true.
+
+BasicOpsTest.php:17
+
+8) BasicOpsTest::testAssertSameFail2
+Failed asserting that false is identical to 0.
+
+BasicOpsTest.php:18
+
+9) BasicOpsTest::testAssertSameFail3
+Failed asserting that 0 is identical to "0".
+
+BasicOpsTest.php:19
+
+10) BasicOpsTest::testAssertNotSameFail1
+Failed asserting that 1 is not identical to 1.
+
+BasicOpsTest.php:23
+
+11) BasicOpsTest::testAssertNotSameFail2
+Failed asserting that "1" is not identical to "1".
+
+BasicOpsTest.php:24
+
+12) BasicOpsTest::testAssertEqualsFail1
+Failed asserting that 2 matches expected 1.
+
+BasicOpsTest.php:28
+
+13) BasicOpsTest::testAssertEqualsFail2
+Failed asserting that true matches expected false.
+
+BasicOpsTest.php:29
+
+14) BasicOpsTest::testAssertNotEqualsFail1
+Failed asserting that 0 is not equal to false.
+
+BasicOpsTest.php:0
+
+15) BasicOpsTest::testAssertNotEqualsFail2
+Failed asserting that 1 is not equal to "1".
+
+BasicOpsTest.php:0
+
+FAILURES!
+Tests: 24, Assertions: 24, Failures: 15.
