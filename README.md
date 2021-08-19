@@ -1,4 +1,4 @@
-![](docs/logo_small.png)
+![](docs/readme_header.png)
 
 ## Overview
 
