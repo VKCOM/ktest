@@ -11,6 +11,12 @@
 * `ktest benchstat` compute and compare statistics about benchmark results (see [benchstat](https://godoc.org/golang.org/x/perf/cmd/benchstat))
 * `ktest env` print ktest-related env variables
 
+## Installation
+
+Download the `ktest` binary from the [latest release](https://github.com/VKCOM/ktest/releases) or build it from sources.
+
+You may need to set `KPHP_ROOT` environment variable to point to your [KPHP repository](https://github.com/VKCOM/kphp/) folder.
+
 ## Example - phpunit
 
 Imagine that we have an ordinary `PHPUnit` test:
