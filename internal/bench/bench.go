@@ -13,6 +13,7 @@ type RunConfig struct {
 
 	AdditionalKphpIncludeDirs string
 	DisableAutoloadForKPHP    bool
+	TeamcityOutput            bool
 
 	Count int
 
