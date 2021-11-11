@@ -3,6 +3,7 @@ package bench
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -20,6 +21,7 @@ import (
 	"github.com/z7zmey/php-parser/pkg/visitor/traverser"
 
 	"github.com/VKCOM/ktest/internal/fileutil"
+	"github.com/VKCOM/ktest/internal/teamcity"
 )
 
 type runner struct {
@@ -27,6 +29,7 @@ type runner struct {
 
 	benchFiles []*benchFile
 
+	logger       *teamcity.Logger
 	composerMode bool
 
 	buildDir string
@@ -54,7 +57,15 @@ type benchParsedInfo struct {
 }
 
 func newRunner(conf *RunConfig) *runner {
-	return &runner{conf: conf}
+	var output io.Writer
+
+	if conf.TeamcityOutput {
+		output = conf.Output
+	} else {
+		output = io.Discard
+	}
+
+	return &runner{conf: conf, logger: teamcity.NewLogger(output)}
 }
 
 func (r *runner) debugf(format string, args ...interface{}) {
@@ -213,10 +224,12 @@ func (r *runner) stepGenerateBenchMain() error {
 			"BenchFilename":   f.fullName,
 			"BenchClassName":  f.info.ClassName,
 			"BenchMethods":    f.info.BenchMethods,
+			"BenchQN":         fmt.Sprintf("php_qn://%s::%s::", f.fullName, f.info.ClassName),
 			"Unroll":          make([]struct{}, 20),
 			"MinTries":        20,
 			"IterationsRate":  100000000,
 			"Count":           r.conf.Count,
+			"Teamcity":        r.conf.TeamcityOutput,
 			"OnlyPhpAutoload": r.conf.DisableAutoloadForKPHP,
 		}
 		if r.composerMode {
@@ -247,12 +260,36 @@ require_once '{{.Bootstrap}}';
 
 {{end}}
 
+function remove_prefix($text, $prefix) {
+  if (strpos($text, $prefix) === 0) {
+    $text = substr($text, strlen($prefix));
+  }
+  return $text;
+}
+
+function test_started(string $name, string $place) {
+{{if .Teamcity}}
+  fprintf(STDERR, "##teamcity[testStarted name='%s' locationHint='{{.BenchQN}}%s']\n", remove_prefix($name, "benchmark"), $place);
+{{end}}
+}
+
+function test_finished(string $name) {
+{{if .Teamcity}}
+  fprintf(STDERR, "##teamcity[testFinished name='%s']\n", remove_prefix($name, "benchmark"));
+{{end}}
+}
+
 function __bench_main(int $count) {
   $bench = new {{.BenchClassName}}();
   $min_tries = {{.MinTries}};
   $iterations_rate = {{.IterationsRate}};
 
   {{range $bench := $.BenchMethods}}
+
+  // try to run the method if it contains an error so that test_started is not executed
+  $bench->{{$bench.Name}}();
+
+  test_started("{{$bench.Name}}", "{{$bench.Name}}");
 
   for ($num_run = 0; $num_run < $count; ++$num_run) {
     fprintf(STDERR, "{{$.BenchClassName}}::{{$bench.Key}}\t");
@@ -277,6 +314,8 @@ function __bench_main(int $count) {
     fprintf(STDERR, "$i\t$avg_time.0 ns/op\n");
   }
 
+  test_finished("{{$bench.Name}}");
+
   {{- end}}
 }
 
@@ -286,6 +325,8 @@ __bench_main(intval($count));
 
 func (r *runner) runPhpBench() error {
 	for _, f := range r.benchFiles {
+		r.logger.TestSuiteStarted(f.info.ClassName)
+
 		mainFilename := filepath.Join(r.buildDir, "main.php")
 		if err := fileutil.WriteFile(mainFilename, f.generatedMain); err != nil {
 			return err
@@ -305,9 +346,13 @@ func (r *runner) runPhpBench() error {
 		elapsed := time.Since(start)
 		if runErr != nil {
 			log.Printf("%s: run error: %v\nPHP Output:\n%s", f.fullName, runErr, runStdout.String())
+			r.logger.TestSuiteFinished(f.info.ClassName, elapsed)
+
 			return fmt.Errorf("error running %s", f.fullName)
 		}
 		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassName, elapsed)
+
+		r.logger.TestSuiteFinished(f.info.ClassName, elapsed)
 	}
 
 	return nil
@@ -319,6 +364,8 @@ func (r *runner) stepRunBench() error {
 	}
 
 	for _, f := range r.benchFiles {
+		r.logger.TestSuiteStarted(f.info.ClassName)
+
 		mainFilename := filepath.Join(r.buildDir, "main.php")
 		if err := fileutil.WriteFile(mainFilename, f.generatedMain); err != nil {
 			return err
@@ -365,6 +412,8 @@ func (r *runner) stepRunBench() error {
 			return fmt.Errorf("error running %s", f.fullName)
 		}
 		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassName, elapsed)
+
+		r.logger.TestSuiteFinished(f.info.ClassName, elapsed)
 	}
 
 	return nil
