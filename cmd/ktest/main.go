@@ -8,10 +8,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/cespare/subcmd"
+
 	"github.com/VKCOM/ktest/internal/bench"
 	"github.com/VKCOM/ktest/internal/kenv"
 	"github.com/VKCOM/ktest/internal/phpunit"
-	"github.com/cespare/subcmd"
 )
 
 // Build* variables are initialized during the build via -ldflags.
@@ -140,6 +141,10 @@ func cmdBenchPHP(args []string) error {
 		`project root directory`)
 	fs.StringVar(&conf.PhpCommand, "php", "php",
 		`PHP command to run the benchmarks`)
+	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
+		`disables autoload for KPHP`)
+	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
+		`report bench execution progress in TeamCity format`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
@@ -182,6 +187,12 @@ func cmdBench(args []string) error {
 		`project root directory`)
 	fs.StringVar(&conf.KphpCommand, "kphp2cpp-binary", "",
 		`kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
+	fs.StringVar(&conf.AdditionalKphpIncludeDirs, "include-dirs", "",
+		`comma separated list of additional kphp include-dirs`)
+	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
+		`disables autoload for KPHP`)
+	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
+		`report bench execution progress in TeamCity format`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {

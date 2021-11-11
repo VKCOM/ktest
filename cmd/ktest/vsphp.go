@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/VKCOM/ktest/internal/fileutil"
+	"github.com/VKCOM/ktest/internal/teamcity"
 )
 
 func benchmarkVsPHP(args []string) error {
@@ -19,6 +20,9 @@ func benchmarkVsPHP(args []string) error {
 	flagCount := fs.Int("count", 10, `run each benchmark n times`)
 	flagPhpCommand := fs.String("php", "php", `PHP command to run the benchmarks`)
 	flagKphpCommand := fs.String("kphp2cpp-binary", "", `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
+	flagAdditionalKphpIncludeDirs := fs.String("include-dirs", "", `comma separated list of additional kphp include-dirs`)
+	flagDisableKphpAutoload := fs.Bool("disable-kphp-autoload", false, `disables autoload for KPHP`)
+	flagTeamcity := fs.Bool("teamcity", false, `report bench execution progress in TeamCity format`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
@@ -26,6 +30,8 @@ func benchmarkVsPHP(args []string) error {
 		log.Printf("Expected at least 1 positional argument, the benchmarking target")
 		return nil
 	}
+
+	logger := teamcity.NewLogger(os.Stdout)
 
 	benchTarget := fs.Args()[0]
 
@@ -97,11 +103,21 @@ func benchmarkVsPHP(args []string) error {
 	var kphpResultsFile string
 	var phpResultsFile string
 
+	if *flagTeamcity {
+		logger.TestStarted("PHP vs KPHP performance comparison")
+	}
+
 	printProgress("compiling KPHP benchmarks...")
 	{
 		args := []string{
 			"bench",
 			"--count", fmt.Sprint(*flagCount),
+		}
+		if *flagDisableKphpAutoload {
+			args = append(args, "--disable-kphp-autoload")
+		}
+		if *flagAdditionalKphpIncludeDirs != "" {
+			args = append(args, "--include-dirs", *flagAdditionalKphpIncludeDirs)
 		}
 		if *flagKphpCommand != "" {
 			args = append(args, "--kphp2cpp-binary", *flagKphpCommand)
@@ -161,6 +177,10 @@ func benchmarkVsPHP(args []string) error {
 		out = bytes.Replace(out, []byte("new time"), []byte("KPHP time"), 1)
 		flushProgress()
 		fmt.Print(string(out))
+	}
+
+	if *flagTeamcity {
+		logger.TestFinished("PHP vs KPHP performance comparison")
 	}
 
 	return nil
