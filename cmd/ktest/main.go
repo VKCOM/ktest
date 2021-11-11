@@ -143,8 +143,6 @@ func cmdBenchPHP(args []string) error {
 		`PHP command to run the benchmarks`)
 	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
 		`disables autoload for KPHP`)
-	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
-		`report bench execution progress in TeamCity format`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
@@ -191,8 +189,6 @@ func cmdBench(args []string) error {
 		`comma separated list of additional kphp include-dirs`)
 	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
 		`disables autoload for KPHP`)
-	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
-		`report bench execution progress in TeamCity format`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
