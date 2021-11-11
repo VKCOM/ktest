@@ -11,6 +11,9 @@ type RunConfig struct {
 	KphpCommand string
 	PhpCommand  string
 
+	AdditionalKphpIncludeDirs string
+	DisableAutoloadForKPHP    bool
+
 	Count int
 
 	Output     io.Writer
