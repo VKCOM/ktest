@@ -11,7 +11,28 @@ type astVisitor struct {
 	visitor.Null
 	out *benchParsedInfo
 
-	currentClass string
+	currentNamespace string
+	currentClass     string
+}
+
+func (v *astVisitor) StmtNamespace(n *ast.StmtNamespace) {
+	ident, ok := n.Name.(*ast.Name)
+	if !ok {
+		return
+	}
+
+	namespace := strings.Builder{}
+	for _, part := range ident.Parts {
+		partIdent, ok := part.(*ast.NamePart)
+		if !ok {
+			continue
+		}
+
+		namespace.Write(partIdent.Value)
+		namespace.WriteByte('\\')
+	}
+
+	v.currentNamespace = namespace.String()
 }
 
 func (v *astVisitor) StmtClass(n *ast.StmtClass) {
@@ -20,9 +41,11 @@ func (v *astVisitor) StmtClass(n *ast.StmtClass) {
 		return
 	}
 	className := string(ident.Value)
+	fqn := "\\" + v.currentNamespace + className
+
 	if strings.HasPrefix(className, "Benchmark") {
-		v.out.ClassName = className
-		v.currentClass = className
+		v.out.ClassName = fqn
+		v.currentClass = fqn
 	}
 }
 
