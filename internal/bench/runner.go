@@ -402,7 +402,7 @@ func (r *runner) stepRunBench() error {
 
 		// 2. Run.
 		executableName := filepath.Join(r.buildDir, "cli")
-		runCommand := exec.Command(executableName)
+		runCommand := exec.Command(executableName, "--Xkphp-options", "--disable-sql")
 		runCommand.Dir = r.buildDir
 		var runStdout bytes.Buffer
 		runCommand.Stderr = r.conf.Output
