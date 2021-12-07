@@ -44,13 +44,14 @@ func (v *astVisitor) StmtClass(n *ast.StmtClass) {
 	fqn := "\\" + v.currentNamespace + className
 
 	if strings.HasPrefix(className, "Benchmark") {
-		v.out.ClassName = fqn
+		v.out.ClassName = className
+		v.out.ClassFQN = fqn
 		v.currentClass = fqn
 	}
 }
 
 func (v *astVisitor) StmtClassMethod(n *ast.StmtClassMethod) {
-	if v.currentClass != v.out.ClassName {
+	if v.currentClass != v.out.ClassFQN {
 		return
 	}
 	ident, ok := n.Name.(*ast.Identifier)
