@@ -181,8 +181,12 @@ func (r *runner) stepParseBenchFiles() error {
 			return err
 		}
 		f.info = &benchParsedInfo{}
-		visitor := &astVisitor{out: f.info}
+		visitor := &astVisitor{out: f.info, currentFileName: f.shortName}
 		traverser.NewTraverser(visitor).Traverse(rootNode)
+
+		for _, err = range visitor.issues {
+			return err
+		}
 
 		if f.info.ClassFQN == "" {
 			return fmt.Errorf("%s: can't find a benchmark class inside a file", f.shortName)

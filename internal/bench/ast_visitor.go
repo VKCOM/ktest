@@ -1,6 +1,8 @@
 package bench
 
 import (
+	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/z7zmey/php-parser/pkg/ast"
@@ -11,6 +13,9 @@ type astVisitor struct {
 	visitor.Null
 	out *benchParsedInfo
 
+	issues []error
+
+	currentFileName  string
 	currentNamespace string
 	currentClass     string
 }
@@ -47,6 +52,19 @@ func (v *astVisitor) StmtClass(n *ast.StmtClass) {
 		v.out.ClassName = className
 		v.out.ClassFQN = fqn
 		v.currentClass = fqn
+
+		v.checkThatClassNameMatchesFilename(className)
+	}
+}
+
+func (v *astVisitor) checkThatClassNameMatchesFilename(className string) {
+	fileName := filepath.Base(v.currentFileName)
+	if fileName != className+".php" {
+		v.issues = append(v.issues,
+			fmt.Errorf("filename '%s' does not match the class name '%s' of the benchmark.\n"+
+				"KPHP will not be able to find the class.\n\n"+
+				"To fix, name the file '%s'", fileName, className, className+".php"),
+		)
 	}
 }
 
