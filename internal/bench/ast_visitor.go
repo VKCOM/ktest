@@ -63,6 +63,6 @@ func (v *astVisitor) StmtClassMethod(n *ast.StmtClassMethod) {
 	}
 	v.out.BenchMethods = append(v.out.BenchMethods, benchMethod{
 		Name: methodName,
-		Key:  strings.TrimPrefix(methodName, "benchmark"),
+		Key:  strings.TrimPrefix(strings.TrimPrefix(methodName, "benchmark"), "_"),
 	})
 }

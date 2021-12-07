@@ -267,15 +267,19 @@ function remove_prefix($text, $prefix) {
   return $text;
 }
 
+function remove_benchmark_prefix($text) {
+  return remove_prefix(remove_prefix($text, "benchmark"), "_");
+}
+
 function test_started(string $name, string $place) {
 {{if .Teamcity}}
-  fprintf(STDERR, "##teamcity[testStarted name='%s' locationHint='{{.BenchQN}}%s']\n", remove_prefix($name, "benchmark"), $place);
+  fprintf(STDERR, "##teamcity[testStarted name='%s' locationHint='{{.BenchQN}}%s']\n", remove_benchmark_prefix($name), $place);
 {{end}}
 }
 
 function test_finished(string $name) {
 {{if .Teamcity}}
-  fprintf(STDERR, "##teamcity[testFinished name='%s']\n", remove_prefix($name, "benchmark"));
+  fprintf(STDERR, "##teamcity[testFinished name='%s']\n", remove_benchmark_prefix($name));
 {{end}}
 }
 
