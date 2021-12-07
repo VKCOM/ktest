@@ -53,6 +53,7 @@ type benchMethod struct {
 
 type benchParsedInfo struct {
 	ClassName    string
+	ClassFQN     string
 	BenchMethods []benchMethod
 }
 
@@ -183,7 +184,7 @@ func (r *runner) stepParseBenchFiles() error {
 		visitor := &astVisitor{out: f.info}
 		traverser.NewTraverser(visitor).Traverse(rootNode)
 
-		if f.info.ClassName == "" {
+		if f.info.ClassFQN == "" {
 			return fmt.Errorf("%s: can't find a benchmark class inside a file", f.shortName)
 		}
 	}
@@ -223,8 +224,9 @@ func (r *runner) stepGenerateBenchMain() error {
 		templateData := map[string]interface{}{
 			"BenchFilename":   f.fullName,
 			"BenchClassName":  f.info.ClassName,
+			"BenchClassFQN":   f.info.ClassFQN,
 			"BenchMethods":    f.info.BenchMethods,
-			"BenchQN":         fmt.Sprintf("php_qn://%s::%s::", f.fullName, f.info.ClassName),
+			"BenchQN":         fmt.Sprintf("php_qn://%s::%s::", f.fullName, f.info.ClassFQN),
 			"Unroll":          make([]struct{}, 20),
 			"MinTries":        20,
 			"IterationsRate":  100000000,
@@ -284,7 +286,7 @@ function test_finished(string $name) {
 }
 
 function __bench_main(int $count) {
-  $bench = new {{.BenchClassName}}();
+  $bench = new {{.BenchClassFQN}}();
   $min_tries = {{.MinTries}};
   $iterations_rate = {{.IterationsRate}};
 
@@ -329,7 +331,7 @@ __bench_main(intval($count));
 
 func (r *runner) runPhpBench() error {
 	for _, f := range r.benchFiles {
-		r.logger.TestSuiteStarted(f.info.ClassName)
+		r.logger.TestSuiteStarted(f.info.ClassFQN)
 
 		mainFilename := filepath.Join(r.buildDir, "main.php")
 		if err := fileutil.WriteFile(mainFilename, f.generatedMain); err != nil {
@@ -344,19 +346,19 @@ func (r *runner) runPhpBench() error {
 		var runStdout bytes.Buffer
 		runCommand.Stderr = r.conf.Output
 		runCommand.Stdout = &runStdout
-		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassName)
+		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassFQN)
 		start := time.Now()
 		runErr := runCommand.Run()
 		elapsed := time.Since(start)
 		if runErr != nil {
 			log.Printf("%s: run error: %v\nPHP Output:\n%s", f.fullName, runErr, runStdout.String())
-			r.logger.TestSuiteFinished(f.info.ClassName, elapsed)
+			r.logger.TestSuiteFinished(f.info.ClassFQN, elapsed)
 
 			return fmt.Errorf("error running %s", f.fullName)
 		}
-		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassName, elapsed)
+		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, elapsed)
 
-		r.logger.TestSuiteFinished(f.info.ClassName, elapsed)
+		r.logger.TestSuiteFinished(f.info.ClassFQN, elapsed)
 	}
 
 	return nil
@@ -368,7 +370,7 @@ func (r *runner) stepRunBench() error {
 	}
 
 	for _, f := range r.benchFiles {
-		r.logger.TestSuiteStarted(f.info.ClassName)
+		r.logger.TestSuiteStarted(f.info.ClassFQN)
 
 		mainFilename := filepath.Join(r.buildDir, "main.php")
 		if err := fileutil.WriteFile(mainFilename, f.generatedMain); err != nil {
@@ -407,7 +409,7 @@ func (r *runner) stepRunBench() error {
 		var runStdout bytes.Buffer
 		runCommand.Stderr = r.conf.Output
 		runCommand.Stdout = &runStdout
-		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassName)
+		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassFQN)
 		start := time.Now()
 		runErr := runCommand.Run()
 		elapsed := time.Since(start)
@@ -415,9 +417,9 @@ func (r *runner) stepRunBench() error {
 			log.Printf("%s: rerror: %v", f.fullName, runErr)
 			return fmt.Errorf("error running %s", f.fullName)
 		}
-		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassName, elapsed)
+		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, elapsed)
 
-		r.logger.TestSuiteFinished(f.info.ClassName, elapsed)
+		r.logger.TestSuiteFinished(f.info.ClassFQN, elapsed)
 	}
 
 	return nil
