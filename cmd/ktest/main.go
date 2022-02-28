@@ -258,6 +258,8 @@ func cmdPhpunit(args []string) error {
 	fs := flag.NewFlagSet("ktest phpunit", flag.ExitOnError)
 	debug := fs.Bool("debug", false,
 		`print debug info`)
+	fs.BoolVar(&conf.EnableFFI, "enable-ffi", false,
+		`whether to pass --enable-ffi to kphp2cpp`)
 	fs.BoolVar(&conf.NoCleanup, "no-cleanup", false,
 		`whether to keep temp build directory`)
 	fs.StringVar(&conf.ProjectRoot, "project-root", workdir,
