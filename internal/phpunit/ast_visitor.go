@@ -85,6 +85,12 @@ func (v *astVisitor) StmtClassMethod(n *ast.StmtClassMethod) {
 		return
 	}
 	methodName := string(ident.Value)
+	switch methodName {
+	case "setUpBeforeClass":
+		v.out.HasSetUpBeforeClass = true
+	case "tearDownAfterClass":
+		v.out.HasTearDownAfterClass = true
+	}
 	if !strings.HasPrefix(methodName, "test") {
 		return
 	}

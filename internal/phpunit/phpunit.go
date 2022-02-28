@@ -16,6 +16,8 @@ type RunConfig struct {
 	Output     io.Writer
 	DebugPrint func(string)
 
+	EnableFFI bool
+
 	NoCleanup bool
 }
 
