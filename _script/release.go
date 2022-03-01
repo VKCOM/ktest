@@ -65,6 +65,7 @@ func prepareArchive(args arguments, platform platformInfo) error {
 	binaryName := filepath.Join("build", "ktest"+binaryExt)
 	buildCmd := exec.Command("go", "build",
 		"-o", binaryName,
+		"-trimpath",
 		"-ldflags", ldFlags,
 		"./cmd/ktest")
 	buildCmd.Env = append([]string{}, os.Environ()...) // Copy env slice
