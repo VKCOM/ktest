@@ -60,7 +60,7 @@ func prepareArchive(args arguments, platform platformInfo) error {
 		binaryExt = ".exe"
 	}
 
-	ldFlags := fmt.Sprintf(`-X 'main.BuildVersion=%s' -X 'main.BuildTime=%s' -X 'main.BuildOSUname=%s' -X 'main.BuildCommit=%s'`,
+	ldFlags := fmt.Sprintf(`-s -w -X 'main.BuildVersion=%s' -X 'main.BuildTime=%s' -X 'main.BuildOSUname=%s' -X 'main.BuildCommit=%s'`,
 		args.version, args.time, args.uname, args.commit)
 	binaryName := filepath.Join("build", "ktest"+binaryExt)
 	buildCmd := exec.Command("go", "build",
