@@ -5,8 +5,10 @@ import (
 )
 
 type RunConfig struct {
-	ProjectRoot string
-	BenchTarget string
+	ProjectRoot  string
+	ComposerRoot string
+	BenchTarget  string
+	Preload      string
 
 	KphpCommand string
 	PhpCommand  string

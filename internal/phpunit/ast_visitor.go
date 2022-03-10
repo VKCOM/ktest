@@ -32,8 +32,8 @@ func (v *astVisitor) ExprMethodCall(n *ast.ExprMethodCall) {
 		return
 	}
 	switch string(methodName.Value) {
-	case "assertTrue", "assertFalse", "assertSame", "assertNotSame", "assertEquals":
-		lineMethodName := string(methodName.Value) + "WithLine"
+	case "fail", "assertTrue", "assertFalse", "assertSame", "assertNotSame", "assertEquals", "assertNotEquals":
+		lineMethodName := "_" + string(methodName.Value) + "WithLine"
 		v.out.fixes = append(v.out.fixes, textEdit{
 			StartPos:    methodName.GetPosition().StartPos,
 			EndPos:      n.OpenParenthesisTkn.GetPosition().EndPos,

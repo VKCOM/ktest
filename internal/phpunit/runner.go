@@ -6,13 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/VKCOM/ktest/internal/fileutil"
+	"github.com/VKCOM/ktest/internal/kphpscript"
+	"github.com/VKCOM/ktest/internal/testdir"
 	"github.com/z7zmey/php-parser/pkg/conf"
 	"github.com/z7zmey/php-parser/pkg/errors"
 	"github.com/z7zmey/php-parser/pkg/parser"
@@ -142,44 +143,23 @@ func (r *runner) stepFindTestFiles() error {
 }
 
 func (r *runner) stepPrepareTempBuildDir() error {
-	tempDir, err := ioutil.TempDir("", "kphpunit-build")
+	testsDirRel := strings.TrimPrefix(r.testDir, r.conf.ProjectRoot)
+	builder := testdir.Builder{
+		ProjectRoot: r.conf.ProjectRoot,
+		LinkFiles:   []string{r.conf.SrcDir},
+		MakeDirs: []string{
+			"mains",
+			testsDirRel,
+		},
+	}
+	tempDir, err := builder.Build()
 	if err != nil {
 		return err
 	}
 	r.buildDir = tempDir
-	r.debugf("temp build dir: %q", tempDir)
-
-	links := []string{
-		r.conf.SrcDir,
-		"vendor",
-		"composer.json",
-	}
-
-	if r.conf.EnableFFI {
-		// Respecting the convention of some FFI libs.
-		// If ./ffilibs exists, we create a symlink for it as well.
-		if fileutil.FileExists(filepath.Join(r.conf.ProjectRoot, "ffilibs")) {
-			links = append(links, "ffilibs")
-		}
-	}
-
-	for _, l := range links {
-		if err := os.Symlink(filepath.Join(r.conf.ProjectRoot, l), filepath.Join(tempDir, l)); err != nil {
-			return err
-		}
-	}
-
-	testDirRel := strings.TrimPrefix(r.testDir, r.conf.ProjectRoot)
-	r.buildDirTests = filepath.Join(tempDir, testDirRel)
-	if err := fileutil.MkdirAll(r.buildDirTests); err != nil {
-		return err
-	}
-
 	r.buildDirMains = filepath.Join(tempDir, "mains")
-	if err := fileutil.MkdirAll(r.buildDirMains); err != nil {
-		return err
-	}
-
+	r.buildDirTests = filepath.Join(tempDir, testsDirRel)
+	r.debugf("temp build dir: %q", tempDir)
 	return nil
 }
 
@@ -312,8 +292,6 @@ func (r *runner) stepWriteTestMain() error {
 }
 
 func (r *runner) stepRunKphpTests() error {
-	composerMode := fileutil.FileExists(filepath.Join(r.conf.ProjectRoot, "composer.json"))
-
 	testsTotal := 0
 	for _, f := range r.testFiles {
 		testsTotal += len(f.info.TestMethods)
@@ -323,40 +301,30 @@ func (r *runner) stepRunKphpTests() error {
 	for _, f := range r.testFiles {
 		testsCompleted += len(f.info.TestMethods)
 
-		// 1. Build.
-		args := []string{
-			"--mode", "cli",
-			"--destination-directory", r.buildDir,
-		}
-		if r.conf.EnableFFI {
-			args = append(args, "--enable-ffi")
-		}
-		if composerMode {
-			args = append(args, "--composer-root", r.conf.ProjectRoot)
-		}
-		args = append(args, f.mainFilename)
-		buildCommand := exec.Command(r.conf.KphpCommand, args...)
-		buildCommand.Dir = r.buildDir
-		out, err := buildCommand.CombinedOutput()
+		buildResult, err := kphpscript.Build(kphpscript.BuildConfig{
+			KPHPCommand:  r.conf.KphpCommand,
+			Script:       f.mainFilename,
+			ComposerRoot: r.conf.ComposerRoot,
+			OutputDir:    r.buildDir,
+			Workdir:      r.buildDir,
+		})
 		if err != nil {
-			log.Printf("%s: build error: %v: %s", f.fullName, err, out)
+			log.Printf("%s: build error: %v", f.fullName, err)
 			continue
 		}
 
-		// 2. Run.
-		executableName := filepath.Join(r.buildDir, "cli")
-		runCommand := exec.Command(executableName)
-		runCommand.Dir = r.buildDir
-		var runStdout bytes.Buffer
-		runCommand.Stderr = r.conf.Output
-		runCommand.Stdout = &runStdout
-		if err := runCommand.Run(); err != nil {
+		runResult, err := kphpscript.Run(kphpscript.RunConfig{
+			Executable: buildResult.Executable,
+			Workdir:    r.buildDir,
+			Stderr:     r.conf.Output,
+		})
+		if err != nil {
 			log.Printf("%s: run error: %v", f.fullName, err)
 			continue
 		}
 
 		// 3. Parse output.
-		parsed, err := parseTestOutput(f, runStdout.Bytes())
+		parsed, err := parseTestOutput(f, runResult.Stdout)
 		if err != nil {
 			log.Printf("%s: parse test output: %v", f.fullName, err)
 			continue

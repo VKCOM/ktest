@@ -6,17 +6,16 @@ import (
 )
 
 type RunConfig struct {
-	ProjectRoot string
-	TestTarget  string
-	TestArgv    []string
-	SrcDir      string
+	ProjectRoot  string
+	ComposerRoot string
+	TestTarget   string
+	TestArgv     []string
+	SrcDir       string
 
 	KphpCommand string
 
 	Output     io.Writer
 	DebugPrint func(string)
-
-	EnableFFI bool
 
 	NoCleanup bool
 }

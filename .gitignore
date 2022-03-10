@@ -1,4 +1,5 @@
 bin/
+build/
 ktest.exe
 vendor/
 composer.lock

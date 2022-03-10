@@ -70,12 +70,12 @@ BasicOpsTest.php:29
 14) BasicOpsTest::testAssertNotEqualsFail1
 Failed asserting that 0 is not equal to false.
 
-BasicOpsTest.php:0
+BasicOpsTest.php:33
 
 15) BasicOpsTest::testAssertNotEqualsFail2
 Failed asserting that 1 is not equal to "1".
 
-BasicOpsTest.php:0
+BasicOpsTest.php:34
 
 FAILURES!
 Tests: 24, Assertions: 24, Failures: 15.
