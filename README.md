@@ -13,9 +13,21 @@
 
 ## Installation
 
-Download the `ktest` binary from the [latest release](https://github.com/VKCOM/ktest/releases) or build it from sources.
+```bash
+$ composer require --dev vkcom/ktest-script
+```
 
-You may need to set `KPHP_ROOT` environment variable to point to your [KPHP repository](https://github.com/VKCOM/kphp/) folder.
+If composer is not an option or you want to install `ktest` binary globally, consider these options:
+
+* Download the `ktest` binary from the [latest release](https://github.com/VKCOM/ktest/releases)
+* Build `ktest` from sources
+
+You may need to set `KPHP_ROOT` environment variable to point to your [KPHP repository](https://github.com/VKCOM/kphp/) folder:
+
+```bash
+$ git clone https://github.com/VKCOM/kphp.git
+$ export KPHP_ROOT=$(pwd)/kphp
+```
 
 ## Example - phpunit
 
@@ -57,7 +69,7 @@ When you're using `phpunit`, tests are executed as PHP, not KPHP.
 `ktest` makes it possible to run your phpunit-compatible tests with KPHP:
 
 ```bash
-$ ktest phpunit tests
+$ ./vendor/bin/ktest phpunit tests
 
 .... 4 / 6 (66%) OK
 .. 6 / 6 (100%) OK
@@ -172,7 +184,7 @@ class BenchmarkConcat3 {
 This benchmark can be executed with a `bench` subcommand:
 
 ```bash
-$ ktest bench BenchmarkConcat3.php
+$ ./vendor/bin/ktest bench BenchmarkConcat3.php
 class BenchmarkConcat3
 BenchmarkConcat3::benchmarkConcat	106500	372.0 ns/op
 ok BenchmarkConcat3 147.153797ms
@@ -183,7 +195,7 @@ Suppose that somebody proposed to re-write this function with `ob_start()` claim
 First, we need to collect samples of the current implementation. We need at least 5 rounds, but usually the more - the better (don't get too crazy though, 10 is good enough in most cases).
 
 ```bash
-$ ktest bench -count 5 Concat3Benchmark.php | tee old.txt
+$ ./vendor/bin/ktest bench -count 5 Concat3Benchmark.php | tee old.txt
 ```
 
 Now we have old implementation results, it's time to roll the a implementation:
@@ -211,13 +223,13 @@ class Concat3Benchmark {
 Now we need to collect the new implementation results:
 
 ```bash
-$ ktest bench -count 5 Concat3Benchmark.php | tee new.txt
+$ ./vendor/bin/ktest bench -count 5 Concat3Benchmark.php | tee new.txt
 ```
 
 When you have 2 sets of samples, it's possible to compare them with benchstat:
 
 ```
-$ ktest benchstat old.txt new.txt
+$ ./vendor/bin/ktest benchstat old.txt new.txt
 name    old time/op  new time/op  delta
 Concat   372ns ± 2%   546ns ± 6%  +46.91%  (p=0.008 n=5+5)
 ```
