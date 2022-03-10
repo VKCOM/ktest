@@ -31,6 +31,16 @@ func parseTestOutput(f *testFile, output []byte) (*testFileResult, error) {
 		switch op {
 		case "START":
 			currentTest = fields[1].(string)
+		case "FAIL":
+			res.asserts++
+			message := fields[1].(string)
+			line := fields[2].(float64)
+			res.failures = append(res.failures, TestFailure{
+				Name:    f.info.ClassName + "::" + currentTest,
+				Message: message,
+				File:    f.fullName,
+				Line:    int(line),
+			})
 		case "ASSERT_OK":
 			res.asserts++
 		case "FINISHED":

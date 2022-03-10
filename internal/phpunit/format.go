@@ -25,7 +25,10 @@ func formatResult(w io.Writer, conf *FormatConfig, result *RunResult) {
 			if failure.Message != "" {
 				fmt.Fprintf(w, "%s\n", failure.Message)
 			}
-			fmt.Fprintf(w, "%s.\n\n", failure.Reason)
+			if failure.Reason != "" {
+				fmt.Fprintf(w, "%s.\n", failure.Reason)
+			}
+			io.WriteString(w, "\n")
 			if conf.ShortLocation {
 				fmt.Fprintf(w, "%s:%d\n\n", filepath.Base(failure.File), failure.Line)
 			} else {

@@ -6,6 +6,13 @@ import (
 	"path/filepath"
 )
 
+func AbsPath(workdir, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(workdir, path)
+}
+
 func IsUnixCharDevice(f *os.File) bool {
 	fileInfo, err := f.Stat()
 	if err != nil {

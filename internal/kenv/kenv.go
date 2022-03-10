@@ -30,6 +30,13 @@ func init() {
 	initKphpRoot()
 }
 
+func FindComposerRoot(projectRoot string) string {
+	if fileutil.FileExists(filepath.Join(projectRoot, "composer.json")) {
+		return projectRoot
+	}
+	return ""
+}
+
 func FindKphpBinary() string {
 	kphp, err := exec.LookPath("kphp2cpp")
 	if err == nil && kphp != "" {

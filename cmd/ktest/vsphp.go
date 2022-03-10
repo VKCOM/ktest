@@ -19,6 +19,7 @@ func benchmarkVsPHP(args []string) error {
 	flagGeomean := fs.Bool("geomean", false, "print the geometric mean of each file")
 	flagCount := fs.Int("count", 10, `run each benchmark n times`)
 	flagPhpCommand := fs.String("php", "php", `PHP command to run the benchmarks`)
+	flagPreload := fs.String("preload", "", `opcache.preload script`)
 	flagKphpCommand := fs.String("kphp2cpp-binary", "", `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
 	flagAdditionalKphpIncludeDirs := fs.String("include-dirs", "", `comma separated list of additional kphp include-dirs`)
 	flagDisableKphpAutoload := fs.Bool("disable-kphp-autoload", false, `disables autoload for KPHP`)
@@ -139,6 +140,9 @@ func benchmarkVsPHP(args []string) error {
 		args := []string{
 			"bench-php",
 			"--count", fmt.Sprint(*flagCount),
+		}
+		if *flagPreload != "" {
+			args = append(args, "--preload", *flagPreload)
 		}
 		if *flagPhpCommand != "" {
 			args = append(args, "--php", *flagPhpCommand)

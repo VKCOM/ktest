@@ -3,15 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/cespare/subcmd"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/VKCOM/ktest/internal/bench"
+	"github.com/VKCOM/ktest/internal/fileutil"
 	"github.com/VKCOM/ktest/internal/kenv"
+	"github.com/VKCOM/ktest/internal/kphpscript"
+	"github.com/VKCOM/ktest/internal/phpscript"
 	"github.com/VKCOM/ktest/internal/phpunit"
 )
 
@@ -31,6 +36,12 @@ func main() {
 			Name:        "phpunit",
 			Description: "run phpunit tests using KPHP",
 			Do:          phpunitMain,
+		},
+
+		{
+			Name:        "compare",
+			Description: "test that KPHP and PHP scripts output is identical",
+			Do:          compareMain,
 		},
 
 		{
@@ -139,6 +150,8 @@ func cmdBenchPHP(args []string) error {
 		`whether to keep temp build directory`)
 	fs.StringVar(&conf.ProjectRoot, "project-root", workdir,
 		`project root directory`)
+	fs.StringVar(&conf.Preload, "preload", "",
+		`opcache.preload script`)
 	fs.StringVar(&conf.PhpCommand, "php", "php",
 		`PHP command to run the benchmarks`)
 	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
@@ -158,6 +171,7 @@ func cmdBenchPHP(args []string) error {
 		return fmt.Errorf("resolve benchmarking target path: %v", err)
 	}
 
+	conf.ComposerRoot = kenv.FindComposerRoot(conf.ProjectRoot)
 	conf.BenchTarget = benchTarget
 	conf.Output = os.Stdout
 	if *debug {
@@ -206,6 +220,7 @@ func cmdBench(args []string) error {
 		return fmt.Errorf("resolve benchmarking target path: %v", err)
 	}
 
+	conf.ComposerRoot = kenv.FindComposerRoot(conf.ProjectRoot)
 	conf.BenchTarget = benchTarget
 	conf.Output = os.Stdout
 	if *debug {
@@ -241,6 +256,93 @@ func benchCmdImpl(conf *bench.RunConfig) error {
 	return nil
 }
 
+func compareMain(args []string) {
+	if err := cmdCompare(args); err != nil {
+		log.Fatalf("ktest compare: error: %v", err)
+	}
+}
+
+func cmdCompare(args []string) error {
+	workdir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	var kphpCommand string
+	fs := flag.NewFlagSet("ktest compare", flag.ExitOnError)
+	flagPhpCommand := fs.String("php", "php", `PHP command to run the benchmarks`)
+	flagPreload := fs.String("preload", "", `opcache.preload script`)
+	flagProjectRoot := fs.String("project-root", workdir,
+		`project root directory`)
+	fs.StringVar(&kphpCommand, "kphp2cpp-binary", "", `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
+	fs.Parse(args)
+
+	if len(fs.Args()) == 0 {
+		log.Printf("Expected exactly 1 positional argument, script filename")
+		return nil
+	}
+
+	if kphpCommand == "" {
+		kphpBinary := kenv.FindKphpBinary()
+		if kphpBinary == "" {
+			return fmt.Errorf("can't locate kphp2cpp binary; please set -kphp2cpp-binary arg")
+		}
+		kphpCommand = kphpBinary
+	}
+
+	scriptName := fs.Args()[0]
+
+	phpResult, err := phpscript.Run(phpscript.RunConfig{
+		PHPCommand: *flagPhpCommand,
+		Preload:    *flagPreload,
+		Script:     scriptName,
+		Workdir:    workdir,
+	})
+	if err != nil {
+		return fmt.Errorf("run php: %v", err)
+	}
+
+	composerRoot := *flagProjectRoot
+	if !fileutil.FileExists(filepath.Join(*flagProjectRoot, "composer.json")) {
+		composerRoot = ""
+	}
+	kphpBuildDir, err := ioutil.TempDir("", "kphpcompare-build")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if kphpBuildDir == "" || kphpBuildDir == "/" {
+			return
+		}
+		if err := os.RemoveAll(kphpBuildDir); err != nil {
+			log.Printf("remove temp build dir: %v", err)
+		}
+	}()
+	buildResult, err := kphpscript.Build(kphpscript.BuildConfig{
+		KPHPCommand:  kphpCommand,
+		Script:       scriptName,
+		ComposerRoot: composerRoot,
+		OutputDir:    kphpBuildDir,
+		Workdir:      workdir,
+	})
+	if err != nil {
+		return fmt.Errorf("build kphp: %v", err)
+	}
+	kphpRunResult, err := kphpscript.Run(kphpscript.RunConfig{
+		Executable: buildResult.Executable,
+		Workdir:    workdir,
+	})
+	if err != nil {
+		return fmt.Errorf("run kphp: %v", err)
+	}
+	stdoutDiff := cmp.Diff(string(phpResult.Stdout), string(kphpRunResult.Stdout))
+	if stdoutDiff != "" {
+		return fmt.Errorf("stdout differs (-PHP +KPHP):\n%s", stdoutDiff)
+	}
+
+	return nil
+}
+
 func phpunitMain(args []string) {
 	if err := cmdPhpunit(args); err != nil {
 		log.Fatalf("ktest phpunit: error: %v", err)
@@ -258,8 +360,6 @@ func cmdPhpunit(args []string) error {
 	fs := flag.NewFlagSet("ktest phpunit", flag.ExitOnError)
 	debug := fs.Bool("debug", false,
 		`print debug info`)
-	fs.BoolVar(&conf.EnableFFI, "enable-ffi", false,
-		`whether to pass --enable-ffi to kphp2cpp`)
 	fs.BoolVar(&conf.NoCleanup, "no-cleanup", false,
 		`whether to keep temp build directory`)
 	fs.StringVar(&conf.ProjectRoot, "project-root", workdir,
@@ -289,6 +389,7 @@ func cmdPhpunit(args []string) error {
 		conf.ProjectRoot += "/"
 	}
 
+	conf.ComposerRoot = kenv.FindComposerRoot(conf.ProjectRoot)
 	conf.TestTarget = testTarget
 	conf.TestArgv = fs.Args()[1:]
 	conf.Output = os.Stdout

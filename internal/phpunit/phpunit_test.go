@@ -2,7 +2,6 @@ package phpunit
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/VKCOM/ktest/internal/fileutil"
 	"github.com/VKCOM/ktest/internal/kenv"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestPhpunit(t *testing.T) {
@@ -53,11 +53,12 @@ func TestPhpunit(t *testing.T) {
 
 		var output bytes.Buffer
 		result, err := Run(&RunConfig{
-			ProjectRoot: workdir,
-			SrcDir:      "src",
-			TestTarget:  filepath.Join(workdir, "tests"),
-			KphpCommand: kenv.FindKphpBinary(),
-			Output:      &output,
+			ProjectRoot:  workdir,
+			ComposerRoot: workdir,
+			SrcDir:       "src",
+			TestTarget:   filepath.Join(workdir, "tests"),
+			KphpCommand:  kenv.FindKphpBinary(),
+			Output:       &output,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -69,10 +70,8 @@ func TestPhpunit(t *testing.T) {
 		FormatResult(&output, formatConfig, result)
 		have := strings.TrimSpace(output.String())
 		want := strings.TrimSpace(string(goldenData))
-		if have != want {
-			t.Errorf("output mismatches!")
-			fmt.Printf("have:\n%s\n", have)
-			fmt.Printf("want:\n%s\n", want)
+		if diff := cmp.Diff(have, want); diff != "" {
+			t.Errorf("output mismatches (-have +want)!\n%s", diff)
 		}
 	}
 
