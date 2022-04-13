@@ -1,7 +1,7 @@
 NOW=`date '+%Y.%m.%d %H:%M:%S'`
 OS=`uname -n -m`
 AFTER_COMMIT=`git rev-parse HEAD`
-VERSION=0.7.0
+VERSION=0.7.1
 BIN_FOLDER=build
 BIN_NAME=ktest
 
