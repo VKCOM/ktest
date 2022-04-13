@@ -367,13 +367,13 @@ func (r *runner) runPhpBench() error {
 			Preload:    r.conf.Preload,
 			Script:     mainFilename,
 			Workdir:    r.buildDir,
+			Stderr:     r.conf.Output,
 		})
 		if err != nil {
 			log.Printf("%s: run error: %v", f.fullName, err)
 			r.logger.TestSuiteFinished(f.info.ClassFQN, result.Time)
 			return fmt.Errorf("error running %s", f.fullName)
 		}
-		r.conf.Output.Write(result.Stderr)
 
 		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, result.Time)
 		r.logger.TestSuiteFinished(f.info.ClassFQN, result.Time)
