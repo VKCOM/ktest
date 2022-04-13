@@ -166,7 +166,7 @@ func cmdBenchPHP(args []string) error {
 		`opcache.preload script`)
 	fs.StringVar(&conf.PhpCommand, "php", "php",
 		`PHP command to run the benchmarks`)
-	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
+	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", envBool("KTEST_DISABLE_KPHP_AUTOLOAD", false),
 		`disables autoload for KPHP`)
 	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
 		`report bench execution progress in TeamCity format`)
@@ -213,9 +213,9 @@ func cmdBench(args []string) error {
 		`project root directory`)
 	fs.StringVar(&conf.KphpCommand, "kphp2cpp-binary", "",
 		`kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
-	fs.StringVar(&conf.AdditionalKphpIncludeDirs, "include-dirs", "",
+	fs.StringVar(&conf.AdditionalKphpIncludeDirs, "include-dirs", envString("KTEST_INCLUDE_DIRS", ""),
 		`comma separated list of additional kphp include-dirs`)
-	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", false,
+	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", envBool("KTEST_DISABLE_KPHP_AUTOLOAD", false),
 		`disables autoload for KPHP`)
 	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
 		`report bench execution progress in TeamCity format`)

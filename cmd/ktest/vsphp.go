@@ -20,8 +20,8 @@ func benchmarkVsPHP(args []string) error {
 	flagPhpCommand := fs.String("php", "php", `PHP command to run the benchmarks`)
 	flagPreload := fs.String("preload", "", `opcache.preload script`)
 	flagKphpCommand := fs.String("kphp2cpp-binary", "", `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
-	flagAdditionalKphpIncludeDirs := fs.String("include-dirs", "", `comma separated list of additional kphp include-dirs`)
-	flagDisableKphpAutoload := fs.Bool("disable-kphp-autoload", false, `disables autoload for KPHP`)
+	flagAdditionalKphpIncludeDirs := fs.String("include-dirs", envString("KTEST_INCLUDE_DIRS", ""), `comma separated list of additional kphp include-dirs`)
+	flagDisableKphpAutoload := fs.Bool("disable-kphp-autoload", envBool("KTEST_DISABLE_KPHP_AUTOLOAD", false), `disables autoload for KPHP`)
 	flagTeamcity := fs.Bool("teamcity", false, `report bench execution progress in TeamCity format`)
 	fs.Parse(args)
 
