@@ -256,6 +256,7 @@ func (r *runner) stepGenerateBenchMain() error {
 			"Count":           r.conf.Count,
 			"Teamcity":        r.conf.TeamcityOutput,
 			"OnlyPhpAutoload": r.conf.DisableAutoloadForKPHP,
+			"Benchmem":        r.conf.Benchmem, // always false for PHP at the moment
 		}
 		if r.conf.ComposerRoot != "" {
 			templateData["Bootstrap"] = filepath.Join(r.conf.ComposerRoot, "vendor", "autoload.php")
@@ -330,6 +331,9 @@ function __bench_main(int $count) {
     $op_time_approx = $run1_end - $run1_start;
     $max_tries = max((int)($iterations_rate / $op_time_approx), $min_tries);
     $time_total = 0;
+    {{ if $.Benchmem }}
+      [$num_allocs_before, $mem_allocated_before] = memory_get_allocations();
+    {{ end }}
     $i = 0;
     while ($i < $max_tries) {
       $start = hrtime(true);
@@ -340,7 +344,14 @@ function __bench_main(int $count) {
       $i += {{len $.Unroll}};
     }
     $avg_time = (int)($time_total / $i);
-    fprintf(STDERR, "$i\t$avg_time.0 ns/op\n");
+    {{ if $.Benchmem }}
+      [$num_allocs_after, $mem_allocated_after] = memory_get_allocations();
+      $op_allocated = ($mem_allocated_after - $mem_allocated_before) / $i;
+      $op_allocs = ($num_allocs_after - $num_allocs_before) / $i;
+      fprintf(STDERR, "$i\t$avg_time.0 ns/op\t$op_allocated B/op\t$op_allocs allocs/op\n");
+    {{ else }}
+      fprintf(STDERR, "$i\t$avg_time.0 ns/op\n");
+    {{ end }}
   }
 
   test_finished("{{$bench.Name}}");

@@ -207,6 +207,8 @@ func cmdBench(args []string) error {
 		`disables autoload for KPHP`)
 	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,
 		`report bench execution progress in TeamCity format`)
+	fs.BoolVar(&conf.Benchmem, "benchmem", false,
+		`print memory allocation statistics for benchmarks`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
