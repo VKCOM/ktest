@@ -5,7 +5,7 @@
 `ktest` is a tool that makes [kphp](https://github.com/VKCOM/kphp/) programs easier to test.
 
 * `ktest phpunit` can run [PHPUnit](https://github.com/sebastianbergmann/phpunit) tests using KPHP
-* `ktest compare` run given script with PHP and KPHP, check that output is identical (useful for runnable examples)
+* `ktest compare` run given script with PHP and KPHP, check that output is identical
 * `ktest bench` run benchmarks using KPHP
 * `ktest bench-ab` run two selected benchmarks using KPHP and compare their results
 * `ktest bench-php` run benchmarks using PHP
