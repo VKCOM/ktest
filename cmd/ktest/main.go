@@ -57,6 +57,12 @@ func main() {
 		},
 
 		{
+			Name:        "bench-ab",
+			Description: "run two selected benchmarks using KPHP and compare their results",
+			Do:          benchABMain,
+		},
+
+		{
 			Name:        "bench-php",
 			Description: "run benchmarks using PHP",
 			Do:          benchPHPMain,
@@ -114,6 +120,12 @@ func benchstatMain(args []string) {
 func benchMain(args []string) {
 	if err := cmdBench(args); err != nil {
 		log.Fatalf("ktest bench: error: %v", err)
+	}
+}
+
+func benchABMain(args []string) {
+	if err := cmdBenchAB(args); err != nil {
+		log.Fatalf("ktest bench-ab: error: %v", err)
 	}
 }
 

@@ -12,23 +12,34 @@ import (
 	"golang.org/x/perf/benchstat"
 )
 
-func colorizeText(str string, colorCode string, enableColorize bool) string {
-	if enableColorize {
-		return strings.Join([]string{colorCode, str, "\033[0m"}, "")
+func colorizeText(str string, colorCode string) string {
+	return colorCode + str + "\033[0m"
+}
+
+func redColorize(str string) string {
+	return colorizeText(str, "\033[31m")
+}
+
+func greenColorize(str string) string {
+	return colorizeText(str, "\033[32m")
+}
+
+func yellowColorize(str string) string {
+	return colorizeText(str, "\033[33m")
+}
+
+func colorizeBenchstatTables(tables []*benchstat.Table) {
+	for _, table := range tables {
+		for _, row := range table.Rows {
+			if strings.HasPrefix(row.Delta, "+") {
+				row.Delta = redColorize(row.Delta)
+			} else if strings.HasPrefix(row.Delta, "-") {
+				row.Delta = greenColorize(row.Delta)
+			} else {
+				row.Delta = yellowColorize(row.Delta)
+			}
+		}
 	}
-	return str
-}
-
-func redColorize(str string, enableColorize bool) string {
-	return colorizeText(str, "\033[31m", enableColorize)
-}
-
-func greenColorize(str string, enableColorize bool) string {
-	return colorizeText(str, "\033[32m", enableColorize)
-}
-
-func yellowColorize(str string, enableColorize bool) string {
-	return colorizeText(str, "\033[33m", enableColorize)
 }
 
 func cmdBenchstat(args []string) error {
@@ -109,16 +120,8 @@ func cmdBenchstat(args []string) error {
 	}
 
 	tables := c.Tables()
-	for _, table := range tables {
-		for _, row := range table.Rows {
-			if strings.HasPrefix(row.Delta, "+") {
-				row.Delta = redColorize(row.Delta, enableColorize)
-			} else if strings.HasPrefix(row.Delta, "-") {
-				row.Delta = greenColorize(row.Delta, enableColorize)
-			} else {
-				row.Delta = yellowColorize(row.Delta, enableColorize)
-			}
-		}
+	if enableColorize {
+		colorizeBenchstatTables(tables)
 	}
 	var buf bytes.Buffer
 	benchstat.FormatText(&buf, tables)

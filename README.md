@@ -7,6 +7,7 @@
 * `ktest phpunit` can run [PHPUnit](https://github.com/sebastianbergmann/phpunit) tests using KPHP
 * `ktest compare` run given script with PHP and KPHP, check that output is identical (useful for runnable examples)
 * `ktest bench` run benchmarks using KPHP
+* `ktest bench-ab` run two selected benchmarks using KPHP and compare their results
 * `ktest bench-php` run benchmarks using PHP
 * `ktest bench-vs-php` run benchmarks using both KPHP and PHP, compare the results
 * `ktest benchstat` compute and compare statistics about benchmark results (see [benchstat](https://godoc.org/golang.org/x/perf/cmd/benchstat))
