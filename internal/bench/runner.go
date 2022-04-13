@@ -407,11 +407,12 @@ func (r *runner) stepRunBench() error {
 		}
 
 		buildResult, err := kphpscript.Build(kphpscript.BuildConfig{
-			KPHPCommand:  r.conf.KphpCommand,
-			Script:       mainFilename,
-			ComposerRoot: r.conf.ComposerRoot,
-			OutputDir:    r.buildDir,
-			Workdir:      r.buildDir,
+			KPHPCommand:               r.conf.KphpCommand,
+			Script:                    mainFilename,
+			ComposerRoot:              r.conf.ComposerRoot,
+			OutputDir:                 r.buildDir,
+			Workdir:                   r.buildDir,
+			AdditionalKphpIncludeDirs: r.conf.AdditionalKphpIncludeDirs,
 		})
 		if err != nil {
 			log.Printf("%s: build error: %v", f.fullName, err)
