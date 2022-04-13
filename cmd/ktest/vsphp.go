@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/VKCOM/ktest/internal/fileutil"
 	"github.com/VKCOM/ktest/internal/teamcity"
@@ -36,48 +35,10 @@ func benchmarkVsPHP(args []string) error {
 
 	benchTarget := fs.Args()[0]
 
-	printProgress := func(format string, args ...interface{}) {
-		msg := fmt.Sprintf(format, args...)
-		fmt.Fprintf(os.Stderr, "\033[2K\r%s", msg)
-	}
-	flushProgress := func() {
-		printProgress("")
-	}
-
 	// In case error occurs, we want to clear all progress-related text.
 	defer func() {
 		flushProgress()
 	}()
-
-	runBenchWithProgress := func(label, command string, args []string) ([]byte, error) {
-		cmd := exec.Command(command, args...)
-		var stdout bytes.Buffer
-		var stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-		completed := 0
-		ch := make(chan error)
-		ticker := time.NewTicker(1 * time.Second)
-		go func() {
-			ch <- cmd.Run()
-		}()
-		for {
-			select {
-			case err := <-ch:
-				if err != nil {
-					combined := append(stderr.Bytes(), stdout.Bytes()...)
-					return nil, fmt.Errorf("run %s benchmarks: %v: %s", label, err, combined)
-				}
-				return stdout.Bytes(), nil
-			case <-ticker.C:
-				lines := bytes.Count(stdout.Bytes(), []byte("\n"))
-				if completed != lines {
-					completed = lines
-					printProgress("running %s benchmarks: got %d samples...", label, completed)
-				}
-			}
-		}
-	}
 
 	var createdFiles []string
 	defer func() {
