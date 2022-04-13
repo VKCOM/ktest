@@ -8,6 +8,22 @@ import (
 	"time"
 )
 
+func envBool(name string, defaultValue bool) bool {
+	v, ok := os.LookupEnv(name)
+	if !ok {
+		return defaultValue
+	}
+	return v == "1" || v == "true"
+}
+
+func envString(name, defaultValue string) string {
+	v, ok := os.LookupEnv(name)
+	if !ok {
+		return defaultValue
+	}
+	return v
+}
+
 func printProgress(format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	fmt.Fprintf(os.Stderr, "\033[2K\r%s", msg)
