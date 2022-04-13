@@ -195,7 +195,7 @@ Suppose that somebody proposed to re-write this function with `ob_start()` claim
 First, we need to collect samples of the current implementation. We need at least 5 rounds, but usually the more - the better (don't get too crazy though, 10 is good enough in most cases).
 
 ```bash
-$ ./vendor/bin/ktest bench -count 5 Concat3Benchmark.php | tee old.txt
+$ ./vendor/bin/ktest bench -count 5 BenchmarkConcat3.php | tee old.txt
 ```
 
 Now we have old implementation results, it's time to roll the a implementation:
@@ -203,7 +203,7 @@ Now we have old implementation results, it's time to roll the a implementation:
 ```php
 <?php
 
-class Concat3Benchmark {
+class BenchmarkConcat3 {
     private static $strings = [
         'foo',
         'bar',
@@ -223,7 +223,7 @@ class Concat3Benchmark {
 Now we need to collect the new implementation results:
 
 ```bash
-$ ./vendor/bin/ktest bench -count 5 Concat3Benchmark.php | tee new.txt
+$ ./vendor/bin/ktest bench -count 5 BenchmarkConcat3.php | tee new.txt
 ```
 
 When you have 2 sets of samples, it's possible to compare them with benchstat:
