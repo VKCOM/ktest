@@ -6,15 +6,17 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type BuildConfig struct {
-	KPHPCommand  string
-	Script       string
-	ComposerRoot string
-	OutputDir    string
-	Workdir      string
+	KPHPCommand               string
+	Script                    string
+	ComposerRoot              string
+	OutputDir                 string
+	Workdir                   string
+	AdditionalKphpIncludeDirs string
 }
 
 type BuildResult struct {
@@ -42,6 +44,11 @@ func Build(config BuildConfig) (*BuildResult, error) {
 	}
 	if config.ComposerRoot != "" {
 		args = append(args, "--composer-root", config.ComposerRoot)
+	}
+	if config.AdditionalKphpIncludeDirs != "" {
+		for _, dir := range strings.Split(config.AdditionalKphpIncludeDirs, ",") {
+			args = append(args, "-I", dir)
+		}
 	}
 	args = append(args, config.Script)
 	buildCommand := exec.Command(config.KPHPCommand, args...)
