@@ -5,21 +5,37 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
 	"golang.org/x/perf/benchstat"
 )
 
+type abResult struct {
+	oldSamples io.Reader
+	newSamples io.Reader
+}
+
 func cmdBenchAB(args []string) error {
+	const usageHelp = `
+Usage [1]: ktest bench-ab old new [...bench command args]
+* old is a regexp for first benchmark name
+* new is a regexp for second benchmark name
+Runs old and new benchmark and compares results with benchstat
+
+Usage [2]: ktest bench-ab oldfile newfile
+* oldfile is a first benchmark filename
+* newfile is a second benchmark filename
+All benchmarks from oldfile are compared with results from newfile
+`
+
 	fs := flag.NewFlagSet("ktest bench-ab", flag.ExitOnError)
 	fs.Usage = func() {
-		log.Printf("Usage: ktest bench-ab Old New [...bench command args]")
-		log.Printf("Old is a regexp for A benchmark name")
-		log.Printf("New is a regexp for B benchmark name")
-		log.Printf("To see bench args run `ktest bench --help`")
+		log.Print(strings.TrimSpace(usageHelp))
 	}
 	fs.Parse(args)
 
@@ -31,26 +47,63 @@ func cmdBenchAB(args []string) error {
 	oldPattern := fs.Arg(0)
 	newPattern := fs.Arg(1)
 
-	oldRegexp, err := regexp.Compile(oldPattern)
-	if err != nil {
-		return fmt.Errorf("compile Old (A) benchmark pattern %q: %v", oldPattern, err)
-	}
-	newRegexp, err := regexp.Compile(newPattern)
-	if err != nil {
-		return fmt.Errorf("compile New (B) benchmark pattern %q: %v", newPattern, err)
-	}
-
 	// In case error occurs, we want to clear all progress-related text.
 	defer func() {
 		flushProgress()
 	}()
 
-	printProgress("compiling KPHP benchmarks...")
-	benchArgs := []string{"bench"}
-	benchArgs = append(benchArgs, fs.Args()[2:]...)
-	out, err := runBenchWithProgress(oldPattern+" and "+newPattern, os.Args[0], benchArgs)
+	runFunc := runFuncsAB
+	if strings.HasSuffix(oldPattern, ".php") && strings.HasSuffix(newPattern, ".php") {
+		runFunc = runFilesAB
+	}
+	result, err := runFunc(oldPattern, newPattern, fs.Args()[2:])
 	if err != nil {
 		return err
+	}
+	return abCompare(result)
+}
+
+func abCompare(results *abResult) error {
+	// Run a benchstat without running subcommand and creating extra tmp files.
+	// We'll use the default options and colored output.
+	benchstatCollection := &benchstat.Collection{
+		Alpha:     0.05,
+		DeltaTest: benchstat.UTest,
+	}
+	if err := benchstatCollection.AddFile("old", results.oldSamples); err != nil {
+		return err
+	}
+	if err := benchstatCollection.AddFile("new", results.newSamples); err != nil {
+		return err
+	}
+	tables := benchstatCollection.Tables()
+
+	flushProgress()
+	colorizeBenchstatTables(tables)
+	benchstatCheckTables(tables)
+	var buf bytes.Buffer
+	benchstat.FormatText(&buf, tables)
+	os.Stdout.Write(buf.Bytes())
+
+	return nil
+}
+
+func runFuncsAB(oldPattern, newPattern string, args []string) (*abResult, error) {
+	oldRegexp, err := regexp.Compile(oldPattern)
+	if err != nil {
+		return nil, fmt.Errorf("compile Old (first) benchmark pattern %q: %v", oldPattern, err)
+	}
+	newRegexp, err := regexp.Compile(newPattern)
+	if err != nil {
+		return nil, fmt.Errorf("compile New (second) benchmark pattern %q: %v", newPattern, err)
+	}
+
+	printProgress("compiling KPHP benchmarks...")
+	benchArgs := []string{"bench"}
+	benchArgs = append(benchArgs, args...)
+	out, err := runBenchWithProgress(oldPattern+" and "+newPattern, os.Args[0], benchArgs)
+	if err != nil {
+		return nil, err
 	}
 
 	// Divide collected samples in three groups:
@@ -79,7 +132,7 @@ func cmdBenchAB(args []string) error {
 			if oldBenchmarkName == "" {
 				oldBenchmarkName = benchName
 			} else if oldBenchmarkName != benchName {
-				return fmt.Errorf("%s regexp matched more than one benchmark: %s and %s", oldPattern, oldBenchmarkName, benchName)
+				return nil, fmt.Errorf("%s regexp matched more than one benchmark: %s and %s", oldPattern, oldBenchmarkName, benchName)
 			}
 		}
 		if newRegexp.MatchString(benchName) {
@@ -87,41 +140,49 @@ func cmdBenchAB(args []string) error {
 			if newBenchmarkName == "" {
 				newBenchmarkName = benchName
 			} else if newBenchmarkName != benchName {
-				return fmt.Errorf("%s regexp matched more than one benchmark: %s and %s", newPattern, newBenchmarkName, benchName)
+				return nil, fmt.Errorf("%s regexp matched more than one benchmark: %s and %s", newPattern, newBenchmarkName, benchName)
 			}
 		}
 	}
 
 	if oldBenchmarkName == newBenchmarkName {
-		return fmt.Errorf("old/new regexp both matched %s", oldBenchmarkName)
+		return nil, fmt.Errorf("old/new regexp both matched %s", oldBenchmarkName)
 	}
 	if oldBenchmarkName == "" {
-		return fmt.Errorf("%s regexp matched no benchmarks", oldPattern)
+		return nil, fmt.Errorf("%s regexp matched no benchmarks", oldPattern)
 	}
 	if newBenchmarkName == "" {
-		return fmt.Errorf("%s regexp matched no benchmarks", newPattern)
+		return nil, fmt.Errorf("%s regexp matched no benchmarks", newPattern)
+	}
+	result := &abResult{
+		oldSamples: &oldResults,
+		newSamples: &newResults,
+	}
+	return result, nil
+}
+
+func runFilesAB(oldFilename, newFilename string, args []string) (*abResult, error) {
+	benchArgs := []string{"bench", "--count", "10", "--benchmem"}
+
+	oldKey := strings.TrimSuffix(filepath.Base(oldFilename), ".php")
+	newKey := strings.TrimSuffix(filepath.Base(newFilename), ".php")
+
+	printProgress(fmt.Sprintf("compiling %s...", oldKey))
+	oldOutput, err := runBenchWithProgress(oldKey, os.Args[0], append(benchArgs, oldFilename))
+	if err != nil {
+		return nil, err
 	}
 
-	// Run a benchstat without running subcommand and creating extra tmp files.
-	// We'll use the default options and colored output.
-	benchstatCollection := &benchstat.Collection{
-		Alpha:     0.05,
-		DeltaTest: benchstat.UTest,
+	printProgress(fmt.Sprintf("compiling %s...", newKey))
+	newOutput, err := runBenchWithProgress(newKey, os.Args[0], append(benchArgs, newFilename))
+	if err != nil {
+		return nil, err
 	}
-	if err := benchstatCollection.AddFile("old", &oldResults); err != nil {
-		return err
-	}
-	if err := benchstatCollection.AddFile("new", &newResults); err != nil {
-		return err
-	}
-	tables := benchstatCollection.Tables()
 
-	flushProgress()
-	colorizeBenchstatTables(tables)
-	benchstatCheckTables(tables)
-	var buf bytes.Buffer
-	benchstat.FormatText(&buf, tables)
-	os.Stdout.Write(buf.Bytes())
-
-	return nil
+	newOutput = bytes.ReplaceAll(newOutput, []byte(newKey+"::"), []byte(oldKey+"::"))
+	result := &abResult{
+		oldSamples: bytes.NewReader(oldOutput),
+		newSamples: bytes.NewReader(newOutput),
+	}
+	return result, nil
 }
