@@ -42,6 +42,19 @@ func colorizeBenchstatTables(tables []*benchstat.Table) {
 	}
 }
 
+func benchstatCheckTables(tables []*benchstat.Table) {
+	for _, table := range tables {
+		for _, row := range table.Rows {
+			if len(row.Metrics) == 0 {
+				continue
+			}
+			if len(row.Metrics[0].RValues) < 5 {
+				log.Printf("WARNING: %s needs more samples, re-run with -count=5 or higher?", row.Benchmark)
+			}
+		}
+	}
+}
+
 func cmdBenchstat(args []string) error {
 	fs := flag.NewFlagSet("ktest benchstat", flag.ExitOnError)
 	flagDeltaTest := fs.String("delta-test", "utest", "significance `test` to apply to delta: utest, ttest, or none")
@@ -123,6 +136,7 @@ func cmdBenchstat(args []string) error {
 	if enableColorize {
 		colorizeBenchstatTables(tables)
 	}
+	benchstatCheckTables(tables)
 	var buf bytes.Buffer
 	benchstat.FormatText(&buf, tables)
 	os.Stdout.Write(buf.Bytes())

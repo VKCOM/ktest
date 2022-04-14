@@ -57,6 +57,8 @@ func cmdBenchAB(args []string) error {
 	// 1. old result set
 	// 2. new result set
 	// 3. ignored result set (not actually saved)
+	oldBenchmarkName := ""
+	newBenchmarkName := ""
 	var oldResults bytes.Buffer
 	var newResults bytes.Buffer
 	for _, line := range strings.Split(string(out), "\n") {
@@ -74,9 +76,30 @@ func cmdBenchAB(args []string) error {
 		newLine := "BenchmarkBenchmark" + line[tabPos:]
 		if oldRegexp.MatchString(benchName) {
 			oldResults.WriteString(newLine + "\n")
-		} else if newRegexp.MatchString(benchName) {
-			newResults.WriteString(newLine + "\n")
+			if oldBenchmarkName == "" {
+				oldBenchmarkName = benchName
+			} else if oldBenchmarkName != benchName {
+				return fmt.Errorf("%s regexp matched more than one benchmark: %s and %s", oldPattern, oldBenchmarkName, benchName)
+			}
 		}
+		if newRegexp.MatchString(benchName) {
+			newResults.WriteString(newLine + "\n")
+			if newBenchmarkName == "" {
+				newBenchmarkName = benchName
+			} else if newBenchmarkName != benchName {
+				return fmt.Errorf("%s regexp matched more than one benchmark: %s and %s", newPattern, newBenchmarkName, benchName)
+			}
+		}
+	}
+
+	if oldBenchmarkName == newBenchmarkName {
+		return fmt.Errorf("old/new regexp both matched %s", oldBenchmarkName)
+	}
+	if oldBenchmarkName == "" {
+		return fmt.Errorf("%s regexp matched no benchmarks", oldPattern)
+	}
+	if newBenchmarkName == "" {
+		return fmt.Errorf("%s regexp matched no benchmarks", newPattern)
 	}
 
 	// Run a benchstat without running subcommand and creating extra tmp files.
@@ -92,9 +115,10 @@ func cmdBenchAB(args []string) error {
 		return err
 	}
 	tables := benchstatCollection.Tables()
-	colorizeBenchstatTables(tables)
 
 	flushProgress()
+	colorizeBenchstatTables(tables)
+	benchstatCheckTables(tables)
 	var buf bytes.Buffer
 	benchstat.FormatText(&buf, tables)
 	os.Stdout.Write(buf.Bytes())
