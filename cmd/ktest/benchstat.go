@@ -42,16 +42,41 @@ func colorizeBenchstatTables(tables []*benchstat.Table) {
 	}
 }
 
-func benchstatCheckTables(tables []*benchstat.Table) {
+func fixBenchstatTables(tables []*benchstat.Table) {
+	disabledGeomean := map[string]struct{}{}
 	for _, table := range tables {
+		selectedRows := table.Rows[:0]
 		for _, row := range table.Rows {
+			if row.PctDelta == 0 && strings.Contains(row.Delta, "0.00%") {
+				// For whatever reason, sometimes we get +0.00% results
+				// in delta which will be painted red. This is misleading.
+				// Let's replace +0.00% with tilde.
+				row.Delta = "~"
+			}
+			for _, m := range row.Metrics {
+				for _, v := range m.RValues {
+					if v < 0.01 {
+						disabledGeomean[m.Unit] = struct{}{}
+					}
+				}
+			}
+			if row.Benchmark == "[Geo mean]" {
+				if len(row.Metrics) != 0 {
+					_, disabled := disabledGeomean[row.Metrics[0].Unit]
+					if disabled {
+						continue
+					}
+				}
+			}
+			selectedRows = append(selectedRows, row)
 			if len(row.Metrics) == 0 {
 				continue
 			}
-			if len(row.Metrics[0].RValues) < 5 {
+			if len(row.Metrics[0].RValues) < 5 && row.Benchmark != "[Geo mean]" {
 				log.Printf("WARNING: %s needs more samples, re-run with -count=5 or higher?", row.Benchmark)
 			}
 		}
+		table.Rows = selectedRows
 	}
 }
 
@@ -133,10 +158,10 @@ func cmdBenchstat(args []string) error {
 	}
 
 	tables := c.Tables()
+	fixBenchstatTables(tables)
 	if enableColorize {
 		colorizeBenchstatTables(tables)
 	}
-	benchstatCheckTables(tables)
 	var buf bytes.Buffer
 	benchstat.FormatText(&buf, tables)
 	os.Stdout.Write(buf.Bytes())

@@ -18,6 +18,7 @@ import (
 type abResult struct {
 	oldSamples io.Reader
 	newSamples io.Reader
+	addGeomean bool
 }
 
 func cmdBenchAB(args []string) error {
@@ -67,8 +68,9 @@ func abCompare(results *abResult) error {
 	// Run a benchstat without running subcommand and creating extra tmp files.
 	// We'll use the default options and colored output.
 	benchstatCollection := &benchstat.Collection{
-		Alpha:     0.05,
-		DeltaTest: benchstat.UTest,
+		Alpha:      0.05,
+		DeltaTest:  benchstat.UTest,
+		AddGeoMean: results.addGeomean,
 	}
 	if err := benchstatCollection.AddFile("old", results.oldSamples); err != nil {
 		return err
@@ -79,8 +81,8 @@ func abCompare(results *abResult) error {
 	tables := benchstatCollection.Tables()
 
 	flushProgress()
+	fixBenchstatTables(tables)
 	colorizeBenchstatTables(tables)
-	benchstatCheckTables(tables)
 	var buf bytes.Buffer
 	benchstat.FormatText(&buf, tables)
 	os.Stdout.Write(buf.Bytes())
@@ -183,6 +185,7 @@ func runFilesAB(oldFilename, newFilename string, args []string) (*abResult, erro
 	result := &abResult{
 		oldSamples: bytes.NewReader(oldOutput),
 		newSamples: bytes.NewReader(newOutput),
+		addGeomean: true,
 	}
 	return result, nil
 }
