@@ -103,6 +103,10 @@ func envMain(args []string) {
 	kphpVars := []string{
 		"KPHP_ROOT",
 		"KPHP_TESTS_POLYFILLS_REPO",
+
+		"KTEST_KPHP2CPP_BINARY",
+		"KTEST_DISABLE_KPHP_AUTOLOAD",
+		"KTEST_INCLUDE_DIRS",
 	}
 
 	for _, name := range kphpVars {
@@ -211,7 +215,7 @@ func cmdBench(args []string) error {
 		`whether to keep temp build directory`)
 	fs.StringVar(&conf.ProjectRoot, "project-root", workdir,
 		`project root directory`)
-	fs.StringVar(&conf.KphpCommand, "kphp2cpp-binary", "",
+	fs.StringVar(&conf.KphpCommand, "kphp2cpp-binary", envString("KTEST_KPHP2CPP_BINARY", ""),
 		`kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
 	fs.StringVar(&conf.AdditionalKphpIncludeDirs, "include-dirs", envString("KTEST_INCLUDE_DIRS", ""),
 		`comma separated list of additional kphp include-dirs`)
@@ -288,7 +292,7 @@ func cmdCompare(args []string) error {
 	flagPreload := fs.String("preload", "", `opcache.preload script`)
 	flagProjectRoot := fs.String("project-root", workdir,
 		`project root directory`)
-	fs.StringVar(&kphpCommand, "kphp2cpp-binary", "", `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
+	fs.StringVar(&kphpCommand, "kphp2cpp-binary", envString("KTEST_KPHP2CPP_BINARY", ""), `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
@@ -380,7 +384,7 @@ func cmdPhpunit(args []string) error {
 		`project root directory`)
 	fs.StringVar(&conf.SrcDir, "src-dir", "src",
 		`project sources root`)
-	fs.StringVar(&conf.KphpCommand, "kphp2cpp-binary", "",
+	fs.StringVar(&conf.KphpCommand, "kphp2cpp-binary", envString("KTEST_KPHP2CPP_BINARY", ""),
 		`kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
 	fs.Parse(args)
 
