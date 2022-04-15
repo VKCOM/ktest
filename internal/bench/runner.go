@@ -31,8 +31,7 @@ type runner struct {
 
 	benchFiles []*benchFile
 
-	logger       *teamcity.Logger
-	composerMode bool
+	logger *teamcity.Logger
 
 	buildDir string
 }
