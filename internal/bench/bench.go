@@ -9,6 +9,7 @@ type RunConfig struct {
 	ComposerRoot string
 	BenchTarget  string
 	Preload      string
+	RunFilter    string
 
 	KphpCommand string
 	PhpCommand  string

@@ -19,6 +19,7 @@ func benchmarkVsPHP(args []string) error {
 	flagCount := fs.Int("count", 10, `run each benchmark n times`)
 	flagPhpCommand := fs.String("php", "php", `PHP command to run the benchmarks`)
 	flagPreload := fs.String("preload", "", `opcache.preload script`)
+	flagRunFilter := fs.String("run", ".*", `regexp that selects the benchmarks to run`)
 	flagKphpCommand := fs.String("kphp2cpp-binary", envString("KTEST_KPHP2CPP_BINARY", ""), `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
 	flagAdditionalKphpIncludeDirs := fs.String("include-dirs", envString("KTEST_INCLUDE_DIRS", ""), `comma separated list of additional kphp include-dirs`)
 	flagDisableKphpAutoload := fs.Bool("disable-kphp-autoload", envBool("KTEST_DISABLE_KPHP_AUTOLOAD", false), `disables autoload for KPHP`)
@@ -73,6 +74,7 @@ func benchmarkVsPHP(args []string) error {
 	{
 		args := []string{
 			"bench",
+			"--run", *flagRunFilter,
 			"--count", fmt.Sprint(*flagCount),
 		}
 		if *flagDisableKphpAutoload {
@@ -100,6 +102,7 @@ func benchmarkVsPHP(args []string) error {
 	{
 		args := []string{
 			"bench-php",
+			"--run", *flagRunFilter,
 			"--count", fmt.Sprint(*flagCount),
 		}
 		if *flagPreload != "" {

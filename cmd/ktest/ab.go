@@ -27,11 +27,19 @@ Usage [1]: ktest bench-ab old new [...bench command args]
 * old is a regexp for first benchmark name
 * new is a regexp for second benchmark name
 Runs old and new benchmark and compares results with benchstat
+Note: bench-ab implicitely passes -count=10 along command line
+      args forwarded to bench, but you can override that by
+	  specifying it explicitely
+
+Example: ktest bench-ab Implode ConcatLoop BenchmarkStrinOps.php
+Example: ktest bench-ab FuncCall Inlined --count 20 --benchmem BenchmarkArrays.php
 
 Usage [2]: ktest bench-ab oldfile newfile
 * oldfile is a first benchmark filename
 * newfile is a second benchmark filename
 All benchmarks from oldfile are compared with results from newfile
+
+Example: ktest bench-ab BenchmarkA.php BenchmarkB.php
 `
 
 	fs := flag.NewFlagSet("ktest bench-ab", flag.ExitOnError)
@@ -101,7 +109,11 @@ func runFuncsAB(oldPattern, newPattern string, args []string) (*abResult, error)
 	}
 
 	printProgress("compiling KPHP benchmarks...")
-	benchArgs := []string{"bench"}
+	benchArgs := []string{
+		"bench",
+		"--count", "10",
+		"--run", fmt.Sprintf("(?:%s)|(?:%s)", oldPattern, newPattern),
+	}
 	benchArgs = append(benchArgs, args...)
 	out, err := runBenchWithProgress(oldPattern+" and "+newPattern, os.Args[0], benchArgs)
 	if err != nil {
