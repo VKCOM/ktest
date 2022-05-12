@@ -54,6 +54,18 @@ func (v *astVisitor) StmtClass(n *ast.StmtClass) {
 		v.currentClass = fqn
 
 		v.checkThatClassNameMatchesFilename(className)
+		return
+	}
+
+	if strings.HasSuffix(className, "Benchmark") {
+		withoutBenchmarkSuffix := strings.TrimSuffix(className, "Benchmark")
+
+		v.issues = append(v.issues,
+			fmt.Errorf(
+				`perhaps you meant 'Benchmark%s', class name should be prefixed with 'Benchmark' and not suffixed`,
+				withoutBenchmarkSuffix,
+			),
+		)
 	}
 }
 
