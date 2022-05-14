@@ -176,7 +176,27 @@ func runFuncsAB(oldPattern, newPattern string, args []string) (*abResult, error)
 }
 
 func runFilesAB(oldFilename, newFilename string, args []string) (*abResult, error) {
-	benchArgs := []string{"bench", "--count", "10", "--benchmem"}
+	withBenchmem := false
+	withCount := false
+	for _, arg := range args {
+		flagName := strings.TrimLeft(arg, "-")
+		if flagName == "benchmem" {
+			withBenchmem = true
+		}
+		if flagName == "count" {
+			withCount = true
+		}
+	}
+
+	benchArgs := append([]string{"bench"}, args...)
+
+	if !withBenchmem {
+		benchArgs = append(benchArgs, "--benchmem")
+	}
+
+	if !withCount {
+		benchArgs = append(benchArgs, "--count", "10")
+	}
 
 	oldKey := strings.TrimSuffix(filepath.Base(oldFilename), ".php")
 	newKey := strings.TrimSuffix(filepath.Base(newFilename), ".php")
