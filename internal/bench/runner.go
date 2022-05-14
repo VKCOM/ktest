@@ -251,7 +251,7 @@ func (r *runner) stepGenerateBenchMain() error {
 	for _, f := range r.benchFiles {
 		selectedMethods := f.info.BenchMethods[:0]
 		for _, m := range f.info.BenchMethods {
-			fullName := f.info.ClassName + "::" + m.Name
+			fullName := f.info.ClassName + "::" + m.Key
 			if re.MatchString(fullName) {
 				numBenchmarksSelected++
 				selectedMethods = append(selectedMethods, m)
