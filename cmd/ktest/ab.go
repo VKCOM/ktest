@@ -26,20 +26,26 @@ func cmdBenchAB(args []string) error {
 Usage [1]: ktest bench-ab old new [...bench command args]
 * old is a regexp for first benchmark name
 * new is a regexp for second benchmark name
-Runs old and new benchmark and compares results with benchstat
-Note: bench-ab implicitely passes -count=10 along command line
-      args forwarded to bench, but you can override that by
-	  specifying it explicitely
 
-Example: ktest bench-ab Implode ConcatLoop BenchmarkStrinOps.php
+Runs old and new benchmark and compares results with benchstat
+Note: bench-ab implicitly passes --count=10 along command line
+      args forwarded to bench, but you can override that by
+      specifying it explicitly
+
+Example: ktest bench-ab Implode ConcatLoop BenchmarkStringOps.php
 Example: ktest bench-ab FuncCall Inlined --count 20 --benchmem BenchmarkArrays.php
 
 Usage [2]: ktest bench-ab oldfile newfile
 * oldfile is a first benchmark filename
 * newfile is a second benchmark filename
+
 All benchmarks from oldfile are compared with results from newfile
+Note: bench-ab implicitly passes --count=10 and --benchmem along 
+      command line args forwarded to bench, but you can override 
+      that by specifying it explicitly
 
 Example: ktest bench-ab BenchmarkA.php BenchmarkB.php
+Example: ktest bench-ab BenchmarkArrayList.php BenchmarkLinkedList.php --count 20 --kphp2cpp /bin/kphp2cpp
 `
 
 	fs := flag.NewFlagSet("ktest bench-ab", flag.ExitOnError)
