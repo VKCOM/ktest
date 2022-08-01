@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/z7zmey/php-parser/pkg/conf"
 	phperrors "github.com/z7zmey/php-parser/pkg/errors"
@@ -293,14 +294,14 @@ func (r *runner) stepGenerateBenchMain() error {
 
 var benchMainTemplate = template.Must(template.New("bench_main").Parse(`<?php
 
-require_once '{{.BenchFilename}}';
+require_once '{{$.BenchFilename}}';
 
 {{if .Bootstrap}}
 
 {{if .OnlyPhpAutoload}}
 #ifndef KPHP
 {{end}}
-require_once '{{.Bootstrap}}';
+require_once '{{$.Bootstrap}}';
 {{if .OnlyPhpAutoload}}
 #endif
 {{end}}
@@ -320,7 +321,7 @@ function remove_benchmark_prefix($text) {
 
 function test_started(string $name, string $place) {
 {{if .Teamcity}}
-  fprintf(STDERR, "##teamcity[testStarted name='%s' locationHint='{{.BenchQN}}%s']\n", remove_benchmark_prefix($name), $place);
+  fprintf(STDERR, "##teamcity[testStarted name='%s' locationHint='{{$.BenchQN}}%s']\n", remove_benchmark_prefix($name), $place);
 {{end}}
 }
 
@@ -331,17 +332,31 @@ function test_finished(string $name) {
 }
 
 function __bench_main(int $count) {
-  $bench = new {{.BenchClassFQN}}();
-  $min_tries = {{.MinTries}};
-  $iterations_rate = {{.IterationsRate}};
-
+  global $argv;
+  $bench_name = $argv[1];
+  switch ($bench_name) {
   {{range $bench := $.BenchMethods}}
+    case '{{$bench.Name}}':
+      __bench_{{$bench.Name}}($count);
+      break;
+  {{- end}}
+    default:
+      fprintf(STDERR, "unexpected method name: $bench_name\n");
+      exit(1);
+  }
+}
 
+{{range $bench := $.BenchMethods}}
+function __bench_{{$bench.Name}}(int $count) {
+  $bench = new {{$.BenchClassFQN}}();
+  $min_tries = {{$.MinTries}};
+  $iterations_rate = {{$.IterationsRate}};
+  
   // try to run the method if it contains an error so that test_started is not executed
   $bench->{{$bench.Name}}();
-
+  
   test_started("{{$bench.Name}}", "{{$bench.Name}}");
-
+  
   for ($num_run = 0; $num_run < $count; ++$num_run) {
     fprintf(STDERR, "{{$.BenchClassName}}::{{$bench.Key}}\t");
     // run0 is not counted to allow the warmup
@@ -376,11 +391,10 @@ function __bench_main(int $count) {
   }
 
   test_finished("{{$bench.Name}}");
-
-  {{- end}}
 }
+{{- end}}
 
-$count = '{{.Count}}';
+$count = '{{$.Count}}';
 __bench_main(intval($count));
 `))
 
@@ -394,21 +408,26 @@ func (r *runner) runPhpBench() error {
 		}
 
 		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassFQN)
-		result, err := phpscript.Run(phpscript.RunConfig{
-			PHPCommand: r.conf.PhpCommand,
-			Preload:    r.conf.Preload,
-			Script:     mainFilename,
-			Workdir:    r.buildDir,
-			Stderr:     r.conf.Output,
-		})
-		if err != nil {
-			log.Printf("%s: run error: %v", f.fullName, err)
-			r.logger.TestSuiteFinished(f.info.ClassFQN, result.Time)
-			return fmt.Errorf("error running %s", f.fullName)
+		timeTotal := time.Duration(0)
+		for _, m := range f.info.BenchMethods {
+			result, err := phpscript.Run(phpscript.RunConfig{
+				PHPCommand: r.conf.PhpCommand,
+				Preload:    r.conf.Preload,
+				Script:     mainFilename,
+				Workdir:    r.buildDir,
+				ScriptArgs: []string{m.Name},
+				Stderr:     r.conf.Output,
+			})
+			timeTotal += result.Time
+			if err != nil {
+				log.Printf("%s: %s run error: %v", f.fullName, m.Name, err)
+				r.logger.TestSuiteFinished(f.info.ClassFQN, result.Time)
+				return fmt.Errorf("error running %s", f.fullName)
+			}
 		}
 
-		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, result.Time)
-		r.logger.TestSuiteFinished(f.info.ClassFQN, result.Time)
+		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, timeTotal)
+		r.logger.TestSuiteFinished(f.info.ClassFQN, timeTotal)
 	}
 
 	return nil
@@ -441,18 +460,24 @@ func (r *runner) stepRunBench() error {
 		}
 
 		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassFQN)
-		runResult, err := kphpscript.Run(kphpscript.RunConfig{
-			Executable: buildResult.Executable,
-			Workdir:    r.buildDir,
-			Stderr:     r.conf.Output,
-		})
-		if err != nil {
-			log.Printf("%s: run error: %v", f.fullName, err)
-			return fmt.Errorf("error running %s", f.fullName)
+		timeTotal := time.Duration(0)
+		for _, m := range f.info.BenchMethods {
+			runResult, err := kphpscript.Run(kphpscript.RunConfig{
+				Executable: buildResult.Executable,
+				Workdir:    r.buildDir,
+				ScriptArgs: []string{m.Name},
+				Stderr:     r.conf.Output,
+			})
+			timeTotal += runResult.Time
+			if err != nil {
+				log.Printf("%s: %s run error: %v", f.fullName, m.Name, err)
+				r.logger.TestSuiteFinished(f.info.ClassFQN, timeTotal)
+				return fmt.Errorf("error running %s", f.fullName)
+			}
 		}
-		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, runResult.Time)
 
-		r.logger.TestSuiteFinished(f.info.ClassFQN, runResult.Time)
+		fmt.Fprintf(r.conf.Output, "ok %s %v\n", f.info.ClassFQN, timeTotal)
+		r.logger.TestSuiteFinished(f.info.ClassFQN, timeTotal)
 	}
 
 	return nil

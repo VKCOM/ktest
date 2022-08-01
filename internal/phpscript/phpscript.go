@@ -21,6 +21,7 @@ type RunConfig struct {
 	Preload    string
 	Script     string
 	Workdir    string
+	ScriptArgs []string
 	Stdout     io.Writer
 	Stderr     io.Writer
 }
@@ -37,6 +38,7 @@ func Run(config RunConfig) (*RunResult, error) {
 			"-d", "opcache.enable=1",
 			"-d", "opcache.enable_cli=1")
 	}
+	args = append(args, config.ScriptArgs...)
 	runCommand := exec.Command(config.PHPCommand, args...)
 	runCommand.Dir = config.Workdir
 	var stdout bytes.Buffer

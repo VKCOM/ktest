@@ -26,6 +26,7 @@ type BuildResult struct {
 type RunConfig struct {
 	Executable string
 	Workdir    string
+	ScriptArgs []string
 	Stdout     io.Writer
 	Stderr     io.Writer
 }
@@ -65,6 +66,7 @@ func Build(config BuildConfig) (*BuildResult, error) {
 
 func Run(config RunConfig) (*RunResult, error) {
 	args := []string{"--Xkphp-options", "--disable-sql"}
+	args = append(args, config.ScriptArgs...)
 	runCommand := exec.Command(config.Executable, args...)
 	runCommand.Dir = config.Workdir
 	var stdout bytes.Buffer
