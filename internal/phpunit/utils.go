@@ -17,23 +17,31 @@ func astNameToString(name *ast.Name) string {
 	return strings.Join(parts, `\`)
 }
 
-func findTestFiles(root string) ([]string, error) {
-	var out []string
+type testFiles struct {
+	scripts  []string
+	testdata []string
+}
+
+func findTestFiles(root string) (testFiles, error) {
+	var out testFiles
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if info.IsDir() {
+			if info.Name() == "testdata" {
+				out.testdata = append(out.testdata, path)
+			}
 			return nil
 		}
 		if strings.HasSuffix(info.Name(), "Test.php") {
-			out = append(out, path)
+			out.scripts = append(out.scripts, path)
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return out, err
 	}
 
 	return out, nil

@@ -32,7 +32,11 @@ func (b *Builder) Build() (string, error) {
 		if !fileutil.FileExists(filename) {
 			continue
 		}
-		if err := os.Symlink(filepath.Join(b.ProjectRoot, l), filepath.Join(tempDir, l)); err != nil {
+		linkPath := filepath.Join(tempDir, l)
+		if err := fileutil.MkdirAll(filepath.Dir(linkPath)); err != nil {
+			return tempDir, err
+		}
+		if err := os.Symlink(filepath.Join(b.ProjectRoot, l), linkPath); err != nil {
 			return tempDir, err
 		}
 	}

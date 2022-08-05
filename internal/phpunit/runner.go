@@ -26,8 +26,9 @@ type runner struct {
 
 	result RunResult
 
-	testDir   string
-	testFiles []*testFile
+	testDir      string
+	testFiles    []*testFile
+	testdataDirs []string
 
 	buildDir      string
 	buildDirTests string
@@ -107,22 +108,28 @@ func (r *runner) debugf(format string, args ...interface{}) {
 func (r *runner) stepFindTestFiles() error {
 	var testDir string
 	var testFiles []string
+	var testdataDirs []string
 	if strings.HasSuffix(r.conf.TestTarget, ".php") {
 		testFiles = []string{r.conf.TestTarget}
 		testDir = filepath.Dir(r.conf.TestTarget)
 	} else {
-		var err error
-		testFiles, err = findTestFiles(r.conf.TestTarget)
+		result, err := findTestFiles(r.conf.TestTarget)
 		if err != nil {
 			return err
 		}
 		testDir = r.conf.TestTarget
+		testFiles = result.scripts
+		testdataDirs = result.testdata
+		for i := range testdataDirs {
+			testdataDirs[i] = strings.TrimPrefix(testdataDirs[i], r.conf.ProjectRoot)
+		}
 	}
 	if !strings.HasSuffix(testDir, "/") {
 		testDir += "/"
 	}
 
 	r.testDir = testDir
+	r.testdataDirs = testdataDirs
 
 	r.testFiles = make([]*testFile, len(testFiles))
 	for i, f := range testFiles {
@@ -144,9 +151,11 @@ func (r *runner) stepFindTestFiles() error {
 
 func (r *runner) stepPrepareTempBuildDir() error {
 	testsDirRel := strings.TrimPrefix(r.testDir, r.conf.ProjectRoot)
+	linkFiles := []string{r.conf.SrcDir}
+	linkFiles = append(linkFiles, r.testdataDirs...)
 	builder := testdir.Builder{
 		ProjectRoot: r.conf.ProjectRoot,
-		LinkFiles:   []string{r.conf.SrcDir},
+		LinkFiles:   linkFiles,
 		MakeDirs: []string{
 			"mains",
 			testsDirRel,
