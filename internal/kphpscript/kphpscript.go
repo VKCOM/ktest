@@ -41,7 +41,6 @@ func Build(config BuildConfig) (*BuildResult, error) {
 	args := []string{
 		"--mode", "cli",
 		"--destination-directory", config.OutputDir,
-		"--enable-ffi",
 	}
 	if config.ComposerRoot != "" {
 		args = append(args, "--composer-root", config.ComposerRoot)
