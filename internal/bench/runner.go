@@ -294,19 +294,13 @@ func (r *runner) stepGenerateBenchMain() error {
 
 var benchMainTemplate = template.Must(template.New("bench_main").Parse(`<?php
 
-require_once '{{$.BenchFilename}}';
-
 {{if .Bootstrap}}
-
-{{if .OnlyPhpAutoload}}
-#ifndef KPHP
-{{end}}
+  {{ if .OnlyPhpAutoload}}#ifndef KPHP{{end}}
 require_once '{{$.Bootstrap}}';
-{{if .OnlyPhpAutoload}}
-#endif
+  {{ if .OnlyPhpAutoload}}#endif{{end}}
 {{end}}
 
-{{end}}
+require_once '{{$.BenchFilename}}';
 
 function remove_prefix($text, $prefix) {
   if (strpos($text, $prefix) === 0) {
