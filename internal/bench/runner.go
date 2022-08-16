@@ -376,8 +376,8 @@ function __bench_{{$bench.Name}}(int $count) {
     $avg_time = (int)($time_total / $i);
     {{ if $.Benchmem }}
       [$num_allocs_after, $mem_allocated_after] = memory_get_allocations();
-      $op_allocated = (int)(round(($mem_allocated_after - $mem_allocated_before) / $i));
-      $op_allocs = (int)(round(($num_allocs_after - $num_allocs_before) / $i));
+      $op_allocated = (int)(ceil(($mem_allocated_after - $mem_allocated_before) / $i));
+      $op_allocs = (int)(ceil(($num_allocs_after - $num_allocs_before) / $i));
       fprintf(STDERR, "$i\t$avg_time.0 ns/op\t$op_allocated B/op\t$op_allocs allocs/op\n");
     {{ else }}
       fprintf(STDERR, "$i\t$avg_time.0 ns/op\n");
