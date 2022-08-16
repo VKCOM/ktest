@@ -19,6 +19,7 @@ type RunResult struct {
 type RunConfig struct {
 	PHPCommand string
 	Preload    string
+	JIT        bool
 	Script     string
 	Workdir    string
 	ScriptArgs []string
@@ -37,6 +38,15 @@ func Run(config RunConfig) (*RunResult, error) {
 			"-d", "opcache.preload="+preloadScript,
 			"-d", "opcache.enable=1",
 			"-d", "opcache.enable_cli=1")
+	}
+	if config.JIT {
+		args = append(args,
+			"-d", "opcache.jit_buffer_size=96M",
+			"-d", "opcache.jit=on")
+	} else {
+		args = append(args,
+			"-d", "opcache.jit_buffer_size=0",
+			"-d", "opcache.jit=off")
 	}
 	args = append(args, config.ScriptArgs...)
 	runCommand := exec.Command(config.PHPCommand, args...)

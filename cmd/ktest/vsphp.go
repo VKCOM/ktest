@@ -19,6 +19,7 @@ func benchmarkVsPHP(args []string) error {
 	flagCount := fs.Int("count", 10, `run each benchmark n times`)
 	flagPhpCommand := fs.String("php", "php", `PHP command to run the benchmarks`)
 	flagPreload := fs.String("preload", "", `opcache.preload script`)
+	flagNoJIT := fs.Bool("no-jit", false, `do not enable PHP8 JIT`)
 	flagRunFilter := fs.String("run", ".*", `regexp that selects the benchmarks to run`)
 	flagKphpCommand := fs.String("kphp2cpp-binary", envString("KTEST_KPHP2CPP_BINARY", ""), `kphp binary path; if empty, $KPHP_ROOT/objs/kphp2cpp is used`)
 	flagAdditionalKphpIncludeDirs := fs.String("include-dirs", envString("KTEST_INCLUDE_DIRS", ""), `comma separated list of additional kphp include-dirs`)
@@ -104,6 +105,9 @@ func benchmarkVsPHP(args []string) error {
 			"bench-php",
 			"--run", *flagRunFilter,
 			"--count", fmt.Sprint(*flagCount),
+		}
+		if *flagNoJIT {
+			args = append(args, "--no-jit")
 		}
 		if *flagPreload != "" {
 			args = append(args, "--preload", *flagPreload)

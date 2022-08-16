@@ -168,6 +168,8 @@ func cmdBenchPHP(args []string) error {
 		`project root directory`)
 	fs.StringVar(&conf.Preload, "preload", "",
 		`opcache.preload script`)
+	fs.BoolVar(&conf.NoJIT, "no-jit", false,
+		`do not enable PHP8 JIT`)
 	fs.StringVar(&conf.PhpCommand, "php", "php",
 		`PHP command to run the benchmarks`)
 	fs.StringVar(&conf.RunFilter, "run", ".*",

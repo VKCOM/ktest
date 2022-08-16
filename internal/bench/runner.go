@@ -413,6 +413,7 @@ func (r *runner) runPhpBench() error {
 			result, err := phpscript.Run(phpscript.RunConfig{
 				PHPCommand: r.conf.PhpCommand,
 				Preload:    r.conf.Preload,
+				JIT:        !r.conf.NoJIT,
 				Script:     mainFilename,
 				Workdir:    r.buildDir,
 				ScriptArgs: []string{m.Name},

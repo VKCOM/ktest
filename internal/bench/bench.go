@@ -18,6 +18,7 @@ type RunConfig struct {
 	DisableAutoloadForKPHP    bool
 	TeamcityOutput            bool
 	Benchmem                  bool
+	NoJIT                     bool
 
 	Count int
 
