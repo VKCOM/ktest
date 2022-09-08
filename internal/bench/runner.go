@@ -341,6 +341,14 @@ function __bench_main(int $count) {
 }
 
 {{range $bench := $.BenchMethods}}
+/** @param {{$.BenchClassFQN}} $bench */
+function __bench_{{$bench.Name}}_wrapper($bench) {
+  while (false) {
+    break;
+    if (false) {}
+  }
+  return $bench->{{$bench.Name}}();
+}
 function __bench_{{$bench.Name}}(int $count) {
   $bench = new {{$.BenchClassFQN}}();
   $min_tries = {{$.MinTries}};
@@ -368,7 +376,7 @@ function __bench_{{$bench.Name}}(int $count) {
     while ($i < $max_tries) {
       $start = hrtime(true);
       {{ range $.Unroll}}
-      $bench->{{$bench.Name}}();
+      __bench_{{$bench.Name}}_wrapper($bench);
       {{- end}}
       $time_total += hrtime(true) - $start;
       $i += {{len $.Unroll}};
