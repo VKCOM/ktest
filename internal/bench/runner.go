@@ -523,11 +523,7 @@ func (r *runner) moveProfiles() error {
 		name := strings.TrimPrefix(e.Name(), "ktest._")
 		name = re.ReplaceAllString(name, "")
 		newName := filepath.Join(r.conf.ProfileDir, name+".callgrind")
-		data, err := os.ReadFile(oldName)
-		if err != nil {
-			return err
-		}
-		if err := fileutil.WriteFile(newName, data); err != nil {
+		if err := os.Rename(oldName, newName); err != nil {
 			return err
 		}
 	}
