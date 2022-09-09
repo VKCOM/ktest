@@ -225,6 +225,8 @@ func cmdBench(args []string) error {
 		`comma separated list of additional kphp include-dirs`)
 	fs.StringVar(&conf.RunFilter, "run", ".*",
 		`regexp that selects the benchmarks to run`)
+	fs.StringVar(&conf.ProfileDir, "profile", "",
+		`write mem+cpu profiles to the specified folder; profiling is disabled by default`)
 	fs.BoolVar(&conf.DisableAutoloadForKPHP, "disable-kphp-autoload", envBool("KTEST_DISABLE_KPHP_AUTOLOAD", false),
 		`disables autoload for KPHP`)
 	fs.BoolVar(&conf.TeamcityOutput, "teamcity", false,

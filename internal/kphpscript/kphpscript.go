@@ -11,6 +11,7 @@ import (
 )
 
 type BuildConfig struct {
+	ProfilingEnabled          bool
 	KPHPCommand               string
 	Script                    string
 	ComposerRoot              string
@@ -24,11 +25,12 @@ type BuildResult struct {
 }
 
 type RunConfig struct {
-	Executable string
-	Workdir    string
-	ScriptArgs []string
-	Stdout     io.Writer
-	Stderr     io.Writer
+	ProfilerPrefix string
+	Executable     string
+	Workdir        string
+	ScriptArgs     []string
+	Stdout         io.Writer
+	Stderr         io.Writer
 }
 
 type RunResult struct {
@@ -41,6 +43,9 @@ func Build(config BuildConfig) (*BuildResult, error) {
 	args := []string{
 		"--mode", "cli",
 		"--destination-directory", config.OutputDir,
+	}
+	if config.ProfilingEnabled {
+		args = append(args, "--profiler", "1")
 	}
 	if config.ComposerRoot != "" {
 		args = append(args, "--composer-root", config.ComposerRoot)
@@ -64,8 +69,11 @@ func Build(config BuildConfig) (*BuildResult, error) {
 }
 
 func Run(config RunConfig) (*RunResult, error) {
-	args := []string{"--Xkphp-options", "--disable-sql"}
-	args = append(args, config.ScriptArgs...)
+	args := append([]string{}, config.ScriptArgs...)
+	args = append(args, "--Xkphp-options", "--disable-sql")
+	if config.ProfilerPrefix != "" {
+		args = append(args, "--profiler-log-prefix", config.ProfilerPrefix)
+	}
 	runCommand := exec.Command(config.Executable, args...)
 	runCommand.Dir = config.Workdir
 	var stdout bytes.Buffer
