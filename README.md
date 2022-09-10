@@ -22,7 +22,7 @@ $ composer require --dev vkcom/ktest-script
 If composer is not an option or you want to install `ktest` binary globally, consider these options:
 
 * Download the `ktest` binary from the [latest release](https://github.com/VKCOM/ktest/releases)
-* Build `ktest` from sources
+* or build `ktest` from sources
 
 You may need to set `KPHP_ROOT` environment variable to point to your [KPHP repository](https://github.com/VKCOM/kphp/) folder:
 
