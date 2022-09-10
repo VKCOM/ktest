@@ -11,7 +11,10 @@ type RunConfig struct {
 	Preload      string
 	RunFilter    string
 
-	ProfileDir string
+	ProfileDir  string
+	CompileOnly bool
+
+	Workdir string
 
 	KphpCommand string
 	PhpCommand  string
