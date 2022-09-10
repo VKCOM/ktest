@@ -339,7 +339,7 @@ function __bad_bench_name_error($bench_name) {
   fprintf(STDERR, "unexpected method name: $bench_name\n");
   fprintf(STDERR, "available methods:\n");
   {{range $bench := $.BenchMethods}}
-    fprintf(STDERR, "\t{{$bench.Name}}\n");
+    fprintf(STDERR, "\t{{$bench.Key}}\n");
   {{- end}}
   exit(1);
 }
@@ -349,8 +349,8 @@ function __bench_main(int $count) {
   $bench_name = $argv[1];
   switch ($bench_name) {
   {{range $bench := $.BenchMethods}}
-    case '{{$bench.Name}}':
-      __bench_{{$bench.Name}}($count);
+    case '{{$bench.Key}}':
+      __bench_{{$bench.Key}}($count);
       break;
   {{- end}}
     default:
@@ -367,14 +367,14 @@ function __bench_main(int $count) {
  * @kphp-profile-allow-inline
  * {{end}}
  */
-function _{{$bench.Name}}($bench) {
+function _{{$bench.Key}}($bench) {
   while (false) {
     break;
     if (false) {}
   }
   return $bench->{{$bench.Name}}();
 }
-function __bench_{{$bench.Name}}(int $count) {
+function __bench_{{$bench.Key}}(int $count) {
   $bench = new {{$.BenchClassFQN}}();
   $min_tries = {{$.MinTries}};
   $iterations_rate = {{$.IterationsRate}};
@@ -401,7 +401,7 @@ function __bench_{{$bench.Name}}(int $count) {
     while ($i < $max_tries) {
       $start = hrtime(true);
       {{ range $.Unroll}}
-      _{{$bench.Name}}($bench);
+      _{{$bench.Key}}($bench);
       {{- end}}
       $time_total += hrtime(true) - $start;
       $i += {{len $.Unroll}};
@@ -443,7 +443,7 @@ func (r *runner) runPhpBench() error {
 				JIT:        !r.conf.NoJIT,
 				Script:     mainFilename,
 				Workdir:    r.buildDir,
-				ScriptArgs: []string{m.Name},
+				ScriptArgs: []string{m.Key},
 				Stderr:     r.conf.Output,
 			})
 			timeTotal += result.Time
@@ -491,8 +491,8 @@ func (r *runner) stepRunBench() error {
 		}
 
 		if r.conf.CompileOnly {
-			resultName := filepath.Join(r.conf.Workdir, strings.ReplaceAll(f.info.ClassFQN, `\`, `_`))
-			resultName = strings.TrimPrefix(resultName, "_") + ".exe"
+			className := strings.TrimPrefix(strings.ReplaceAll(f.info.ClassFQN, `\`, `_`), "_")
+			resultName := filepath.Join(r.conf.Workdir, className) + ".exe"
 			if err := os.Rename(buildResult.Executable, resultName); err != nil {
 				return err
 			}
@@ -508,7 +508,7 @@ func (r *runner) stepRunBench() error {
 				ProfilerPrefix: r.profilerPrefix,
 				Executable:     buildResult.Executable,
 				Workdir:        r.buildDir,
-				ScriptArgs:     []string{m.Name},
+				ScriptArgs:     []string{m.Key},
 				Stderr:         r.conf.Output,
 			})
 			timeTotal += runResult.Time
