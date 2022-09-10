@@ -335,6 +335,15 @@ function test_finished(string $name) {
 {{end}}
 }
 
+function __bad_bench_name_error($bench_name) {
+  fprintf(STDERR, "unexpected method name: $bench_name\n");
+  fprintf(STDERR, "available methods:\n");
+  {{range $bench := $.BenchMethods}}
+    fprintf(STDERR, "\t{{$bench.Name}}\n");
+  {{- end}}
+  exit(1);
+}
+
 function __bench_main(int $count) {
   global $argv;
   $bench_name = $argv[1];
@@ -345,8 +354,7 @@ function __bench_main(int $count) {
       break;
   {{- end}}
     default:
-      fprintf(STDERR, "unexpected method name: $bench_name\n");
-      exit(1);
+      __bad_bench_name_error($bench_name);
   }
 }
 
@@ -459,7 +467,9 @@ func (r *runner) stepRunBench() error {
 	}
 
 	for _, f := range r.benchFiles {
-		r.logger.TestSuiteStarted(f.info.ClassFQN)
+		if r.conf.CompileOnly {
+			fmt.Fprintf(r.conf.Output, "compiling %s\n", f.info.ClassFQN)
+		}
 
 		mainFilename := filepath.Join(r.buildDir, "main.php")
 		if err := fileutil.WriteFile(mainFilename, f.generatedMain); err != nil {
@@ -480,7 +490,18 @@ func (r *runner) stepRunBench() error {
 			return fmt.Errorf("can't build %s", f.fullName)
 		}
 
+		if r.conf.CompileOnly {
+			resultName := filepath.Join(r.conf.Workdir, strings.ReplaceAll(f.info.ClassFQN, `\`, `_`))
+			resultName = strings.TrimPrefix(resultName, "_") + ".exe"
+			if err := os.Rename(buildResult.Executable, resultName); err != nil {
+				return err
+			}
+			continue
+		}
+
+		r.logger.TestSuiteStarted(f.info.ClassFQN)
 		fmt.Fprintf(r.conf.Output, "class: %s\n", f.info.ClassFQN)
+
 		timeTotal := time.Duration(0)
 		for _, m := range f.info.BenchMethods {
 			runResult, err := kphpscript.Run(kphpscript.RunConfig{
@@ -506,7 +527,7 @@ func (r *runner) stepRunBench() error {
 }
 
 func (r *runner) moveProfiles() error {
-	if r.profilerPrefix == "" {
+	if r.profilerPrefix == "" || r.conf.CompileOnly {
 		return nil
 	}
 	if err := fileutil.MkdirAll(r.conf.ProfileDir); err != nil {

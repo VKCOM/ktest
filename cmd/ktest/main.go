@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -210,6 +211,8 @@ func cmdBench(args []string) error {
 		return err
 	}
 
+	conf.Workdir = workdir
+
 	fs := flag.NewFlagSet("ktest bench", flag.ExitOnError)
 	debug := fs.Bool("debug", false,
 		`print debug info`)
@@ -233,6 +236,8 @@ func cmdBench(args []string) error {
 		`report bench execution progress in TeamCity format`)
 	fs.BoolVar(&conf.Benchmem, "benchmem", false,
 		`print memory allocation statistics for benchmarks`)
+	fs.BoolVar(&conf.CompileOnly, "compile-only", false,
+		`build executables, but do not run the benchmarks`)
 	fs.Parse(args)
 
 	if len(fs.Args()) == 0 {
@@ -244,6 +249,10 @@ func cmdBench(args []string) error {
 	benchTarget, err := filepath.Abs(fs.Args()[0])
 	if err != nil {
 		return fmt.Errorf("resolve benchmarking target path: %v", err)
+	}
+
+	if conf.CompileOnly && conf.ProfileDir != "" {
+		return errors.New("using --profile with --compile-only will have no effect")
 	}
 
 	conf.ComposerRoot = kenv.FindComposerRoot(conf.ProjectRoot)
