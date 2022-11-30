@@ -42,7 +42,7 @@ func Run(config RunConfig) (*RunResult, error) {
 	if config.JIT {
 		args = append(args,
 			"-d", "opcache.jit_buffer_size=96M",
-			"-d", "opcache.jit=1235")
+			"-d", "opcache.jit=on")
 	} else {
 		args = append(args,
 			"-d", "opcache.jit_buffer_size=0",
