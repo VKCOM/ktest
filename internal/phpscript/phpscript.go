@@ -31,22 +31,22 @@ func Run(config RunConfig) (*RunResult, error) {
 	args := []string{
 		"-f", config.Script,
 		"-d", "ffi.enable=preload",
+		"-d", "opcache.enable=1",
+		"-d", "opcache.enable_cli=1",
 	}
 	if config.Preload != "" {
 		preloadScript := fileutil.AbsPath(config.Workdir, config.Preload)
 		args = append(args,
-			"-d", "opcache.preload="+preloadScript,
-			"-d", "opcache.enable=1",
-			"-d", "opcache.enable_cli=1")
+			"-d", "opcache.preload="+preloadScript)
 	}
 	if config.JIT {
 		args = append(args,
 			"-d", "opcache.jit_buffer_size=96M",
-			"-d", "opcache.jit=on")
+			"-d", "opcache.jit=1235")
 	} else {
 		args = append(args,
 			"-d", "opcache.jit_buffer_size=0",
-			"-d", "opcache.jit=off")
+			"-d", "opcache.jit=0")
 	}
 	args = append(args, config.ScriptArgs...)
 	runCommand := exec.Command(config.PHPCommand, args...)
