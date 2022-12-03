@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"log"
+	"math"
 	"os"
 	"strings"
 
@@ -28,9 +29,51 @@ func yellowColorize(str string) string {
 	return colorizeText(str, "\033[33m")
 }
 
+func calculateMeanDiff(m *benchstat.Metrics) float64 {
+	if m.Mean == 0 || m.Max == 0 {
+		return 0
+	}
+	diff := 1 - m.Min/m.Mean
+	if d := m.Max/m.Mean - 1; d > diff {
+		diff = d
+	}
+	return diff
+}
+
+func calculateCombinedMeanDiff(metrics []*benchstat.Metrics) float64 {
+	d := 0.0
+	for _, m := range metrics {
+		if m.Max == m.Min {
+			continue
+		}
+		d += 100.0 * calculateMeanDiff(m)
+	}
+	return d
+}
+
+func isTinyValue(metrics []*benchstat.Metrics) bool {
+	const tinyValueThreshold = 32.0 // in nanosecs
+	for _, m := range metrics {
+		if m.Mean >= tinyValueThreshold {
+			return false
+		}
+	}
+	return true
+}
+
 func colorizeBenchstatTables(tables []*benchstat.Table) {
 	for _, table := range tables {
 		for _, row := range table.Rows {
+			d := calculateCombinedMeanDiff(row.Metrics)
+			if isTinyValue(row.Metrics) {
+				// For tiny values, require x2 precision.
+				d *= 2
+			}
+			d++
+			if math.Abs(row.PctDelta) < d {
+				row.Delta = yellowColorize("~")
+				continue
+			}
 			if strings.HasPrefix(row.Delta, "+") {
 				row.Delta = redColorize(row.Delta)
 			} else if strings.HasPrefix(row.Delta, "-") {
