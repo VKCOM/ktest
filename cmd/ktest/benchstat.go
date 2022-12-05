@@ -51,6 +51,27 @@ func calculateCombinedMeanDiff(metrics []*benchstat.Metrics) float64 {
 	return d
 }
 
+func avgValue(metrics []*benchstat.Metrics) float64 {
+	v := 0.0
+	for _, m := range metrics {
+		v += m.Mean
+	}
+	return v / float64(len(metrics))
+}
+
+func getValueEpsilon(avg float64) float64 {
+	switch {
+	case avg < 10:
+		return 1
+	case avg < 32:
+		return 2
+	case avg < 80:
+		return 3
+	default:
+		return 4
+	}
+}
+
 func isTinyValue(metrics []*benchstat.Metrics) bool {
 	const tinyValueThreshold = 32.0 // in nanosecs
 	for _, m := range metrics {
@@ -61,9 +82,21 @@ func isTinyValue(metrics []*benchstat.Metrics) bool {
 	return true
 }
 
+func isEpsilonDelta(metrics []*benchstat.Metrics) bool {
+	if len(metrics) != 2 {
+		return false
+	}
+	eps := getValueEpsilon(avgValue(metrics))
+	return math.Abs(metrics[0].Mean-metrics[1].Mean) <= eps
+}
+
 func colorizeBenchstatTables(tables []*benchstat.Table) {
 	for _, table := range tables {
 		for _, row := range table.Rows {
+			if isEpsilonDelta(row.Metrics) {
+				row.Delta = yellowColorize("~")
+				continue
+			}
 			d := calculateCombinedMeanDiff(row.Metrics)
 			if isTinyValue(row.Metrics) {
 				// For tiny values, require x2 precision.
